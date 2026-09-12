@@ -1,0 +1,14 @@
+# Keep the build context small and keep secrets out of it.
+.git/
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Not needed in the image
+test_*.py
+README.md
+.DS_Store
