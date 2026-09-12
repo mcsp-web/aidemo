@@ -4,6 +4,9 @@ services:
     expose:
       - "8000"
     environment:
+      # Coolify generates the public domain from this and routes to port 8000.
+      - SERVICE_FQDN_ASKDOC_8000=/
+      - APP_PORT=8000
       # Your existing Anthropic key. Set it in a .env file next to this one.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       # Provider + model are swappable without touching code.
