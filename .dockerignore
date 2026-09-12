@@ -12,3 +12,7 @@ venv/
 test_*.py
 README.md
 .DS_Store
+
+# Project docs / agent instructions — never needed in the image.
+docs/
+CLAUDE.md
