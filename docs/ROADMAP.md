@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.4.0 · Sept 12, 2026**
+**Derived from `MASTER_CANON.md` v0.6.0 · Sept 13, 2026**
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -21,6 +21,11 @@
 | INFRA-02 | Git init, `main` branch, initial commit, push to `mcsp-web/aidemo` | v0.3.0 |
 | INFRA-03 | Coolify app via GitHub App source, Docker Compose build pack | v0.4.0 |
 | INFRA-04 | Domain bound, HTTP→HTTPS, `ANTHROPIC_API_KEY` set — app **Running** | v0.4.0 |
+| INFRA-07 | Repo `mcsp-web/aidemo` set **private** | v0.6.0 |
+| APP-09 | Multi-format ingestion — DOCX/TXT/MD alongside PDF; `kind`-aware "Page N" / "Part N" source labels | v0.6.0 |
+| APP-10 | Drop-zone border fix — `.drop` `display:block` (was a fragmented inline `<label>`) | v0.6.0 |
+| HARDEN-05 | `build()` made atomic — a failed upload no longer leaves a torn index | v0.6.0 |
+| HARDEN-06 | Tests cover multi-format + `.doc` 422 + `kind`; fixed cp1252 nonzero-exit bug | v0.6.0 |
 
 ---
 
@@ -30,7 +35,6 @@
 |---|---|---|---|
 | INFRA-05 | Live smoke test: upload a PDF, ask a question, confirm answer + sources | **James** | OPEN-3 |
 | INFRA-06 | Flip `aidemo` DNS back to proxied once the cert issues | **James** | OPEN-2 |
-| INFRA-07 | Set repo `mcsp-web/aidemo` to private | **James** | OPEN-1 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-08 | Verify domain routing survives a rebuild; commit `SERVICE_FQDN` if needed | James + CLI | OPEN-5 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
@@ -62,6 +66,6 @@
 ---
 
 ## Milestone line
-`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → (next) v0.5.0 = smoke-tested + proxied + demo linked`
+`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.6.0 multi-format + fixes (committed, unpushed) → (next) deployed + smoke-tested + proxied + demo linked`
 
 *End of ROADMAP — AskDoc*

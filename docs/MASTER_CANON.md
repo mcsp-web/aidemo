@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
-**Last Updated:** September 12, 2026 (session 1)
-**Current Version:** v0.4.0
+**Last Updated:** September 13, 2026 (session 2)
+**Current Version:** v0.6.0
 **Stack:** Python 3.11 · FastAPI · sentence-transformers · Anthropic Claude (swappable → OpenAI) · Docker · Coolify · Cloudflare · Hetzner
 
 > Bootstrap canon. This project has no `_canon/apply.php` machinery — this file is
@@ -62,13 +62,13 @@ GET  /                                 -> index.html
 
 | Item | Value |
 |---|---|
-| VPS | Hetzner CPX21 · `<VPS-IP — see Coolify/Hetzner console>` · 4 GB RAM · 3 vCPU · 80 GB — **shared with PureOps, MinIO, and client sites** |
+| VPS | Hetzner CPX21 · `see coolify.mcspconsulting.com / Hetzner console` · 4 GB RAM · 3 vCPU · 80 GB — **shared with PureOps, MinIO, and client sites** |
 | Coolify | `https://coolify.mcspconsulting.com` · project **aidemo** / environment **production** |
 | App resource | Application (Docker Compose build pack), source = **GitHub App** (`mcsp-web`), repo `aidemo`, branch `main` |
 | Auth to GitHub | **GitHub App source** (not a deploy key) — enables auto-deploy webhooks. Org deploy-keys policy left **Disabled** |
 | Auto-deploy | On push to `main` (webhook) |
 | Build | Coolify builds the image on the server from `Dockerfile` via compose. **First build pulls torch (~2–2.5 GB)** — the resource risk on a 4 GB shared box |
-| Domain | `aidemo.mcspconsulting.com` → Cloudflare A record → `<VPS-IP — see Coolify/Hetzner console>` |
+| Domain | `aidemo.mcspconsulting.com` → Cloudflare A record → `see coolify.mcspconsulting.com / Hetzner console` |
 | DNS state | **Currently grey-cloud / DNS-only** (set for first cert issuance) — **must flip back to proxied** once HTTPS is confirmed (OPEN-2) |
 | Domain binding | Added in Coolify UI: `https://aidemo.mcspconsulting.com` on service `askdoc`, internal port `8000`. HTTP→HTTPS redirect enabled |
 | Secrets | `ANTHROPIC_API_KEY` in Coolify Environment Variables UI — the only secret; never in the repo |
@@ -137,6 +137,15 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - `ANTHROPIC_API_KEY` set in the Coolify env UI. DNS set grey-cloud for first cert.
 - **Outcome:** app status **Running**. Live Q&A path not yet smoke-tested (OPEN-3).
 
+### [v0.6.0] — Sept 13, 2026 — Multi-format ingestion + hardening
+**Summary:** accept DOCX, TXT, MD alongside PDF; fix two adjacent defects found during the work.
+- `rag.py`: `extract_pages(data, filename)` dispatches by extension and returns `(pages, kind)` where `kind` is `"page"` (pdf) or `"part"` (synthesized ~3000-char units for non-paged formats). DOCX walks paragraphs **and** tables. `build()` made **atomic** — commits to `self` only after embedding succeeds (fixes torn state where a failed upload after a good one left `ready=True` with mismatched chunks/vectors).
+- `main.py`: upload gate widened to pdf/docx/doc/txt/md; `.doc` admitted deliberately so `rag.py` owns the single "save as .docx" 422; top-level `"kind"` added to `/upload` and `/ask` responses.
+- `requirements.txt`: `python-docx==1.1.2` (pulls `lxml`, `typing-extensions`).
+- Frontend: accept list + JS validation mirror the backend gate; `sourceLabel()` renders "Page N" / "Part N" from `kind`; copy generalized from PDF to document. Also fixed the drop-zone border — `.drop` is a `<label>` (default `display:inline`) with block children, which fragmented the inline box; `display:block` restores the dashed border and its vertical padding.
+- Tests: multi-format + `.doc`-422 + `kind` coverage; fixed a non-ASCII char that made both scripts exit nonzero on cp1252 consoles despite passing.
+- **Outcome:** feature complete across 7 commits, verified against stubs plus a real `python-docx` extraction. **Not yet deployed** — commits are local only.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -168,4 +177,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.4.0*
+*End of MASTER CANON — AskDoc v0.6.0*
