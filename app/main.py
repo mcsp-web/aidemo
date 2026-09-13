@@ -30,8 +30,9 @@ app = FastAPI(title="Ask Your Document")
 STATIC_DIR = Path(__file__).parent / "static"
 
 # Gate on the extension here; rag.extract_pages owns the real dispatch and the
-# per-format error messages.
-ALLOWED_EXTENSIONS = (".pdf", ".docx", ".txt", ".md")
+# per-format error messages. ".doc" is deliberately let through: rag.py turns it
+# into a 422 that says to save as .docx, which beats a generic 400 from here.
+ALLOWED_EXTENSIONS = (".pdf", ".docx", ".doc", ".txt", ".md")
 
 # One shared index for the demo.
 index = DocumentIndex()
