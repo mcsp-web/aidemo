@@ -92,4 +92,4 @@ assert "system" in captured and "messages" in captured, "prompt should be assemb
 assert "4.2 million" in captured["messages"][0]["content"], "passages should be in the prompt"
 print(f"[ok] prompt correctly included the source passages; model={captured['model']}")
 
-print("\nALL CHECKS PASSED ✅  — pipeline plumbing is sound.")
+print("\nALL CHECKS PASSED — pipeline plumbing is sound.")
