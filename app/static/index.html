@@ -202,13 +202,13 @@
 
     <div class="card">
       <h2>Your document</h2>
-      <p class="hint">Upload a PDF and ask questions about what's inside.</p>
+      <p class="hint">Upload a PDF, Word, text, or Markdown file and ask questions about it.</p>
 
       <label class="drop" id="drop">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div class="big">Drop a PDF here</div>
+        <div class="big">Drop a document here</div>
         <div class="small">or tap to choose a file</div>
-        <input type="file" id="file" accept="application/pdf" />
+        <input type="file" id="file" accept=".pdf,.docx,.doc,.txt,.md" />
       </label>
 
       <div class="doc-status" id="status">
@@ -261,6 +261,15 @@
   const examples = document.getElementById("examples");
   const toast = document.getElementById("toast");
   let ready = false;
+  // Mirrors the server's upload gate. ".doc" is allowed through so the server
+  // can answer with its clearer "save as .docx" message.
+  const ALLOWED_EXTS = [".pdf", ".docx", ".doc", ".txt", ".md"];
+  // "page" for real pages (PDF), "part" for synthesized units (docx/txt/md).
+  let sourceKind = "page";
+
+  function sourceLabel(n) {
+    return `${sourceKind === "part" ? "Part" : "Page"} ${n}`;
+  }
 
   function showToast(msg) {
     toast.textContent = msg;
@@ -286,7 +295,11 @@
   fileInput.addEventListener("change", () => { if (fileInput.files[0]) upload(fileInput.files[0]); });
 
   async function upload(file) {
-    if (!file.name.toLowerCase().endsWith(".pdf")) { showToast("Please choose a PDF file."); return; }
+    const name = file.name.toLowerCase();
+    if (!ALLOWED_EXTS.some(ext => name.endsWith(ext))) {
+      showToast("Please choose a PDF, Word, text, or Markdown file.");
+      return;
+    }
     statusEl.classList.add("show");
     statusName.textContent = file.name;
     statusMeta.textContent = "Reading your document…";
@@ -297,6 +310,7 @@
       const res = await fetch("/upload", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Upload failed.");
+      if (data.kind) sourceKind = data.kind;
       statusMeta.textContent = `Ready · ${data.chunks} sections indexed`;
       transcript.innerHTML = "";
       setReady(true);
@@ -342,10 +356,10 @@
     sources.forEach((s, i) => {
       const chip = document.createElement("button");
       chip.className = "src";
-      chip.textContent = `Page ${s.page}`;
+      chip.textContent = sourceLabel(s.page);
       const body = document.createElement("div");
       body.className = "src-body";
-      body.innerHTML = `<span class="pg">Page ${s.page} · match ${(s.score*100).toFixed(0)}%</span>`;
+      body.innerHTML = `<span class="pg">${sourceLabel(s.page)} · match ${(s.score*100).toFixed(0)}%</span>`;
       body.appendChild(document.createTextNode(s.text));
       chip.addEventListener("click", () => body.classList.toggle("show"));
       bodies.push([chip, body]);
@@ -386,6 +400,9 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Something went wrong.");
+      // Also honoured here, so a reload against an already-indexed document
+      // still labels its sources correctly.
+      if (data.kind) sourceKind = data.kind;
       const body = thinking.querySelector(".body");
       body.textContent = data.answer;
       if (data.sources && data.sources.length) body.appendChild(renderSources(data.sources));
