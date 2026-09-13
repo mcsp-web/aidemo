@@ -3,7 +3,7 @@ main.py — the web app.
 
 Routes:
   GET  /         -> the single-page UI
-  POST /upload   -> accept a PDF, index it, report how many chunks were built
+  POST /upload   -> accept a document, index it, report how many chunks were built
   POST /ask      -> answer a question against the indexed document
   GET  /health   -> simple liveness check for the VPS / Coolify
 
@@ -29,6 +29,10 @@ app = FastAPI(title="Ask Your Document")
 
 STATIC_DIR = Path(__file__).parent / "static"
 
+# Gate on the extension here; rag.extract_pages owns the real dispatch and the
+# per-format error messages.
+ALLOWED_EXTENSIONS = (".pdf", ".docx", ".txt", ".md")
+
 # One shared index for the demo.
 index = DocumentIndex()
 
@@ -44,8 +48,11 @@ def health() -> dict:
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)) -> dict:
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Please upload a PDF file.")
+    if not file.filename or not file.filename.lower().endswith(ALLOWED_EXTENSIONS):
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload a PDF, Word (.docx), text, or Markdown file.",
+        )
     data = await file.read()
     if len(data) > 20 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large (20 MB max)")
@@ -55,7 +62,7 @@ async def upload(file: UploadFile = File(...)) -> dict:
         n = await run_in_threadpool(index.build, data, file.filename)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
-    return {"filename": file.filename, "chunks": n}
+    return {"filename": file.filename, "chunks": n, "kind": index.kind}
 
 
 @app.post("/ask")
@@ -74,7 +81,8 @@ def ask(req: AskRequest) -> dict:
         {"page": c.page, "score": round(score, 3), "text": c.text}
         for c, score in results
     ]
-    return {"answer": reply, "sources": sources}
+    # kind ("page" or "part") is what the UI pairs with each source's number.
+    return {"answer": reply, "sources": sources, "kind": index.kind}
 
 
 @app.get("/")
