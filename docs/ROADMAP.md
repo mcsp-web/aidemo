@@ -38,7 +38,8 @@
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-08 | Verify domain routing survives a rebuild; commit `SERVICE_FQDN` if needed | James + CLI | OPEN-5 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
-| INFRA-10 | Watch RAM on first rebuild; build-and-push image if it struggles | James | OPEN-7 |
+| INFRA-10 | Watch runtime RAM on the shared box during/after a rebuild | James | OPEN-7 |
+| INFRA-11 | Local-build-and-push (GHCR): build the image on the laptop, push to a registry, point Coolify at the image so heavy torch rebuilds leave the shared VPS | James + CLI | OPEN-7 |
 
 ---
 

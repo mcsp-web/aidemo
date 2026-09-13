@@ -28,7 +28,7 @@ Authoritative files. Audit against these before changing anything.
 | Role | File | Authority |
 |---|---|---|
 | Web app / routes | `app/main.py` | FastAPI app; routes `/`, `/upload`, `/ask`, `/health`; upload hardening (size cap + threadpool) |
-| Retrieval engine | `app/rag.py` | PDF extraction, chunking, local embeddings, in-memory `DocumentIndex`, cosine search |
+| Retrieval engine | `app/rag.py` | Multi-format extraction (pdf/docx/txt/md), chunking, local embeddings, in-memory `DocumentIndex`, cosine search |
 | Generation layer | `app/llm.py` | Provider-swappable answer generation; `SYSTEM_PROMPT`; answers from passages only |
 | Frontend | `app/static/index.html` | Single-page UI — upload, chat, expandable sources |
 | Package marker | `app/__init__.py` | Makes `app` an explicit package (empty) |
@@ -137,6 +137,12 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - `ANTHROPIC_API_KEY` set in the Coolify env UI. DNS set grey-cloud for first cert.
 - **Outcome:** app status **Running**. Live Q&A path not yet smoke-tested (OPEN-3).
 
+### [v0.5.0] — Sept 12, 2026 — Governance + protocols
+**Summary:** track canon + roadmap under `docs/`, add `CLAUDE.md`, redact the VPS IP.
+- Moved `MASTER_CANON.md` + `ROADMAP.md` into `docs/` (tracked); added root `CLAUDE.md` (auto-loaded protocols); `.dockerignore` excludes `docs/` + `CLAUDE.md`.
+- Redacted the VPS public IP from the canon; the placeholder points to the Coolify/Hetzner console.
+- **Outcome:** repo self-documents its own discipline; no infra address in tracked files.
+
 ### [v0.6.0] — Sept 13, 2026 — Multi-format ingestion + hardening
 **Summary:** accept DOCX, TXT, MD alongside PDF; fix two adjacent defects found during the work.
 - `rag.py`: `extract_pages(data, filename)` dispatches by extension and returns `(pages, kind)` where `kind` is `"page"` (pdf) or `"part"` (synthesized ~3000-char units for non-paged formats). DOCX walks paragraphs **and** tables. `build()` made **atomic** — commits to `self` only after embedding succeeds (fixes torn state where a failed upload after a good one left `ready=True` with mismatched chunks/vectors).
@@ -163,9 +169,9 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Built, tested, hardened, committed, pushed (`mcsp-web/aidemo`, `main`).
 - Coolify app live (**Running**) via GitHub App source, Docker Compose build pack.
 - Domain bound (`aidemo.mcspconsulting.com` → `askdoc:8000`), HTTP→HTTPS on, `ANTHROPIC_API_KEY` set.
+- Repo `mcsp-web/aidemo` set **private**; VPS IP redacted from the canon (OPEN-1 closed).
 
 ### ⏳ OPEN — do these next
-- **OPEN-1 — Confirm repo visibility.** Set `mcsp-web/aidemo` **private** — the README carries infra notes (VPS IP) and GTM strategy. *(James)*
 - **OPEN-2 — Flip DNS back to proxied** (orange) once the cert issues on `aidemo.mcspconsulting.com`. Currently grey/DNS-only. *(James)*
 - **OPEN-3 — Live smoke test (BOLD, James):** load the URL, upload a PDF, ask a question, confirm a real Claude answer **and** the sources panel. This is the only proof the key + live LLM call work.
 - **OPEN-4 — Set the Coolify reverse-proxy client-body-size to ~25 MB** — the real backstop behind the in-app 20 MB cap. *(James)*
