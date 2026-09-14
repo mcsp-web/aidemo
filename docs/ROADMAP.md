@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.6.0 · Sept 13, 2026**
+**Derived from `MASTER_CANON.md` v0.7.0 · Sept 13, 2026**
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -26,6 +26,8 @@
 | APP-10 | Drop-zone border fix — `.drop` `display:block` (was a fragmented inline `<label>`) | v0.6.0 |
 | HARDEN-05 | `build()` made atomic — a failed upload no longer leaves a torn index | v0.6.0 |
 | HARDEN-06 | Tests cover multi-format + `.doc` 422 + `kind`; fixed cp1252 nonzero-exit bug | v0.6.0 |
+| INFRA-06 | `aidemo` DNS proxied (orange) — confirmed via live `CF-RAY` header | v0.7.0 |
+| INFRA-11 | Build-off-server migration — GitHub Actions → GHCR, Coolify pulls. Done via cloud CI (not local build) | v0.7.0 |
 
 ---
 
@@ -34,12 +36,12 @@
 | ID | Item | Owner | Canon ref |
 |---|---|---|---|
 | INFRA-05 | Live smoke test: upload a PDF, ask a question, confirm answer + sources | **James** | OPEN-3 |
-| INFRA-06 | Flip `aidemo` DNS back to proxied once the cert issues | **James** | OPEN-2 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-08 | Verify domain routing survives a rebuild; commit `SERVICE_FQDN` if needed | James + CLI | OPEN-5 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
 | INFRA-10 | Watch runtime RAM on the shared box during/after a rebuild | James | OPEN-7 |
-| INFRA-11 | Local-build-and-push (GHCR): build the image on the laptop, push to a registry, point Coolify at the image so heavy torch rebuilds leave the shared VPS | James + CLI | OPEN-7 |
+| INFRA-12 | Actions-triggered deploy — workflow calls Coolify's deploy webhook after a green build, restoring push-to-deploy without the build-race (Coolify git auto-deploy stays off). Needs `COOLIFY_TOKEN` + `COOLIFY_DEPLOY_URL` as repo secrets | James + CLI | — |
+| INFRA-13 | Switch to CPU-only torch wheel to drop ~1 GB CUDA/triton from the 3.2 GB image (cuts pull time + disk) | CLI | — |
 
 ---
 
@@ -67,6 +69,6 @@
 ---
 
 ## Milestone line
-`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.6.0 multi-format + fixes (committed, unpushed) → (next) deployed + smoke-tested + proxied + demo linked`
+`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.5.0 governance → v0.6.0 multi-format + fixes → v0.7.0 build-off-server CI/CD (live via pull, proxied) → (next) push-to-deploy (INFRA-12) + smoke-tested + demo linked`
 
 *End of ROADMAP — AskDoc*

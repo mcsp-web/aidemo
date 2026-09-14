@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
 **Last Updated:** September 13, 2026 (session 2)
-**Current Version:** v0.6.0
+**Current Version:** v0.7.0
 **Stack:** Python 3.11 · FastAPI · sentence-transformers · Anthropic Claude (swappable → OpenAI) · Docker · Coolify · Cloudflare · Hetzner
 
 > Bootstrap canon. This project has no `_canon/apply.php` machinery — this file is
@@ -66,10 +66,10 @@ GET  /                                 -> index.html
 | Coolify | `https://coolify.mcspconsulting.com` · project **aidemo** / environment **production** |
 | App resource | Application (Docker Compose build pack), source = **GitHub App** (`mcsp-web`), repo `aidemo`, branch `main` |
 | Auth to GitHub | **GitHub App source** (not a deploy key) — enables auto-deploy webhooks. Org deploy-keys policy left **Disabled** |
-| Auto-deploy | On push to `main` (webhook) |
-| Build | Coolify builds the image on the server from `Dockerfile` via compose. **First build pulls torch (~2–2.5 GB)** — the resource risk on a 4 GB shared box |
+| Auto-deploy | **Manual** (auto-deploy off); Actions-triggered deploy planned (INFRA-12) |
+| Build | GitHub Actions builds → GHCR; Coolify pulls `ghcr.io/mcsp-web/aidemo:latest` (`pull_policy: always`). **VPS never builds.** |
 | Domain | `aidemo.mcspconsulting.com` → Cloudflare A record → `see coolify.mcspconsulting.com / Hetzner console` |
-| DNS state | **Currently grey-cloud / DNS-only** (set for first cert issuance) — **must flip back to proxied** once HTTPS is confirmed (OPEN-2) |
+| DNS state | **Proxied (orange)** — confirmed live via `Server: cloudflare` + `CF-RAY` response headers (OPEN-2 closed) |
 | Domain binding | Added in Coolify UI: `https://aidemo.mcspconsulting.com` on service `askdoc`, internal port `8000`. HTTP→HTTPS redirect enabled |
 | Secrets | `ANTHROPIC_API_KEY` in Coolify Environment Variables UI — the only secret; never in the repo |
 
@@ -152,6 +152,15 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Tests: multi-format + `.doc`-422 + `kind` coverage; fixed a non-ASCII char that made both scripts exit nonzero on cp1252 consoles despite passing.
 - **Outcome:** feature complete across 7 commits, verified against stubs plus a real `python-docx` extraction. **Not yet deployed** — commits are local only.
 
+### [v0.7.0] — Sept 13, 2026 — Build-off-server CI/CD migration (INFRA-11)
+**Summary:** image builds moved off both the laptop and the VPS to GitHub Actions → GHCR; Coolify now pulls a prebuilt image instead of building.
+- `.github/workflows/build-image.yml`: on push to `main`, a **test** job runs the suite (torch stubbed), then a **build** job builds `linux/amd64` and pushes `ghcr.io/mcsp-web/aidemo` (`:latest` + `:sha-*`) with a registry buildcache. First build 5m31s; cached rebuilds ~1m.
+- `docker-compose.yml`: `build: .` → `image: ghcr.io/mcsp-web/aidemo:latest` + `pull_policy: always`. `build: .` moved to `docker-compose.override.yml.example` (local dev only), which now tags local builds `aidemo-local:dev` so a stray push can't target the published image.
+- VPS authenticates to GHCR with a `read:packages` token; deploys **pull** (seconds) instead of building (~2m).
+- Guard docs (`CLAUDE.md` / `README.md` / override example): image publishing is **CI-only**.
+- **Reason:** the torch build (~3.2 GB image) froze the 8 GB laptop and threatened the 3.7 GB shared VPS; neither should build it. Cloud runners have the headroom.
+- **Outcome:** v0.6.0 multi-format confirmed live via the pulled image (`/health` shows a `.docx`). Coolify auto-deploy stays **OFF**; deploys are manual pending INFRA-12.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -170,9 +179,10 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Coolify app live (**Running**) via GitHub App source, Docker Compose build pack.
 - Domain bound (`aidemo.mcspconsulting.com` → `askdoc:8000`), HTTP→HTTPS on, `ANTHROPIC_API_KEY` set.
 - Repo `mcsp-web/aidemo` set **private**; VPS IP redacted from the canon (OPEN-1 closed).
+- Image builds moved to GitHub Actions → GHCR; Coolify pulls the prebuilt image (INFRA-11, v0.7.0).
+- DNS **proxied** (orange) confirmed — `CF-RAY` header observed live on `aidemo.mcspconsulting.com` (OPEN-2 closed).
 
 ### ⏳ OPEN — do these next
-- **OPEN-2 — Flip DNS back to proxied** (orange) once the cert issues on `aidemo.mcspconsulting.com`. Currently grey/DNS-only. *(James)*
 - **OPEN-3 — Live smoke test (BOLD, James):** load the URL, upload a PDF, ask a question, confirm a real Claude answer **and** the sources panel. This is the only proof the key + live LLM call work.
 - **OPEN-4 — Set the Coolify reverse-proxy client-body-size to ~25 MB** — the real backstop behind the in-app 20 MB cap. *(James)*
 - **OPEN-5 — Verify routing survives a rebuild.** Confirm whether the domain binding persists on redeploy, or whether `docker-compose.yml` needs `SERVICE_FQDN_ASKDOC_8000` committed for the route to survive. Check on the next deploy.
@@ -183,4 +193,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.6.0*
+*End of MASTER CANON — AskDoc v0.7.0*

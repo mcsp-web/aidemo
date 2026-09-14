@@ -1,7 +1,7 @@
 services:
   askdoc:
-    # LOCAL DEV ONLY. Never run `docker compose push` — it would overwrite the
-    # CI-built ghcr.io/mcsp-web/aidemo:latest. Publishing is GitHub Actions' job only.
+    # LOCAL DEV ONLY. Local builds are tagged aidemo-local:dev and must never be
+    # pushed (no `docker compose push`) — image publishing is GitHub Actions' job only.
     image: aidemo-local:dev
     build: .
     pull_policy: build
