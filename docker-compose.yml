@@ -1,6 +1,7 @@
 services:
   askdoc:
-    build: .
+    image: ghcr.io/mcsp-web/aidemo:latest
+    pull_policy: always
     expose:
       - "8000"
     environment:

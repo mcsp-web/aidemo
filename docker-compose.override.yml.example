@@ -1,4 +1,6 @@
 services:
   askdoc:
+    build: .
+    pull_policy: build
     ports:
       - "8000:8000"
