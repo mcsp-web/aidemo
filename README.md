@@ -36,6 +36,9 @@ The compose file uses `expose` rather than a published port, so Coolify's proxy
 can route to it by domain. That second copy is what republishes port 8000 on
 your own machine — it's git-ignored, so each clone needs it once.
 
+**Local runs build from source for testing only. The deployed image is built and
+published by GitHub Actions — never run `docker compose push` from a laptop.**
+
 > First build takes a few minutes — it downloads the embedding model once and
 > bakes it into the image. After that, startup is instant.
 
@@ -49,7 +52,10 @@ costs a fraction of a cent per question on the default Haiku model.
 1. Push this folder to a Git repo.
 2. In Coolify: **New Resource → Docker Compose**, point it at the repo.
 3. Add an environment variable **`ANTHROPIC_API_KEY`** with your key.
-4. Set a domain (e.g. `demo.yourdomain.com`) and deploy.
+4. Before the first deploy, run `docker login ghcr.io -u <github-username>` on the
+   host and paste a token with `read:packages` scope when prompted, so the image
+   pull authenticates.
+5. Set a domain (e.g. `demo.yourdomain.com`) and deploy.
 
 That public URL is what goes in your Fiverr gallery.
 

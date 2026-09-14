@@ -15,8 +15,9 @@ AskDoc — an AI document-Q&A demo: upload a document, ask questions, get answer
 - **Canon-first:** `docs/MASTER_CANON.md` is the source of truth; `docs/ROADMAP.md` is derived. On "update canon": append a dated, versioned entry (files, reason, outcome), bump the header version, reconcile the roadmap.
 
 ## Build & deploy
-- Repo: `mcsp-web/aidemo` (private), branch `main`. Coolify project `aidemo` → production. Auth via GitHub App source; auto-deploy on push.
-- **Rebuild cost:** any change to `requirements.txt` busts the pip layer and forces a full rebuild (torch ~2–2.5 GB) on the 4 GB shared VPS. Don't rebuild under load. Planned: build locally and push a prebuilt image (see ROADMAP `INFRA-11`); until then, if a server rebuild struggles, build the image locally and push it.
+- Repo: `mcsp-web/aidemo` (private), branch `main`. Coolify project `aidemo` → production. Auth via GitHub App source. Deploys are currently **MANUAL** in Coolify (auto-deploy off); an Actions-triggered deploy job is planned (ROADMAP `INFRA-12`) but not yet wired.
+- **Rebuild cost:** any change to `requirements.txt` busts the pip layer and forces a full torch rebuild (~2–2.5 GB) on GitHub Actions, not the VPS. The server only ever pulls the finished image.
+- Image publishing is GitHub Actions → GHCR ONLY. Never build-and-push the image from a local machine or the server; deploys pull the CI image. (INFRA-11 complete.)
 - Deploy is NOT via Launchpad — Launchpad is a Laravel-only factory (canon Decision D-1). This is a hand-made Coolify Docker-Compose resource.
 - Secrets live only in Coolify env (`ANTHROPIC_API_KEY`). Never in the repo.
 
