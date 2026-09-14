@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.7.0 · Sept 13, 2026**
+**Derived from `MASTER_CANON.md` v0.7.1 · Sept 14, 2026**
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -28,6 +28,7 @@
 | HARDEN-06 | Tests cover multi-format + `.doc` 422 + `kind`; fixed cp1252 nonzero-exit bug | v0.6.0 |
 | INFRA-06 | `aidemo` DNS proxied (orange) — confirmed via live `CF-RAY` header | v0.7.0 |
 | INFRA-11 | Build-off-server migration — GitHub Actions → GHCR, Coolify pulls. Done via cloud CI (not local build) | v0.7.0 |
+| INFRA-08 | Domain routing survives a redeploy — verified after the v0.7.0 pull redeploy (`GET /` 200, `/health` 200) | v0.7.0 |
 
 ---
 
@@ -37,11 +38,10 @@
 |---|---|---|---|
 | INFRA-05 | Live smoke test: upload a PDF, ask a question, confirm answer + sources | **James** | OPEN-3 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
-| INFRA-08 | Verify domain routing survives a rebuild; commit `SERVICE_FQDN` if needed | James + CLI | OPEN-5 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
-| INFRA-10 | Watch runtime RAM on the shared box during/after a rebuild | James | OPEN-7 |
-| INFRA-12 | Actions-triggered deploy — workflow calls Coolify's deploy webhook after a green build, restoring push-to-deploy without the build-race (Coolify git auto-deploy stays off). Needs `COOLIFY_TOKEN` + `COOLIFY_DEPLOY_URL` as repo secrets | James + CLI | — |
-| INFRA-13 | Switch to CPU-only torch wheel to drop ~1 GB CUDA/triton from the 3.2 GB image (cuts pull time + disk) | CLI | — |
+| INFRA-10 | Watch runtime RAM + image disk on the shared box — VPS no longer builds, pulls only | James | OPEN-7 |
+| INFRA-12 | Actions-triggered deploy — workflow calls Coolify's deploy webhook after a green build, restoring push-to-deploy without the build-race (Coolify git auto-deploy stays off). Needs `COOLIFY_TOKEN` + `COOLIFY_DEPLOY_URL` as repo secrets | James + CLI | OPEN-8 |
+| INFRA-13 | Switch to CPU-only torch wheel to drop ~1 GB CUDA/triton from the 3.2 GB image (cuts pull time + disk) | CLI | OPEN-9 |
 
 ---
 
