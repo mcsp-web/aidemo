@@ -1,5 +1,6 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.7.1 · Sept 14, 2026**
+**Derived from `MASTER_CANON.md` v0.7.2 · Sept 16, 2026**
+**Status:** **SHELVED** as of v0.7.2 — container stopped, revivable via Deploy (see canon §5 v0.7.2).
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -29,6 +30,7 @@
 | INFRA-06 | `aidemo` DNS proxied (orange) — confirmed via live `CF-RAY` header | v0.7.0 |
 | INFRA-11 | Build-off-server migration — GitHub Actions → GHCR, Coolify pulls. Done via cloud CI (not local build) | v0.7.0 |
 | INFRA-08 | Domain routing survives a redeploy — verified after the v0.7.0 pull redeploy (`GET /` 200, `/health` 200) | v0.7.0 |
+| INFRA-10 | Runtime cost measured — 202 MiB RAM (5.3%), 0.12% CPU idle, ~3.2 GB image; stopping freed ~400 MiB RAM | v0.7.2 |
 
 ---
 
@@ -39,7 +41,6 @@
 | INFRA-05 | Live smoke test: upload a PDF, ask a question, confirm answer + sources | **James** | OPEN-3 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
-| INFRA-10 | Watch runtime RAM + image disk on the shared box — VPS no longer builds, pulls only | James | OPEN-7 |
 | INFRA-12 | Actions-triggered deploy — workflow calls Coolify's deploy webhook after a green build, restoring push-to-deploy without the build-race (Coolify git auto-deploy stays off). Needs `COOLIFY_TOKEN` + `COOLIFY_DEPLOY_URL` as repo secrets | James + CLI | OPEN-8 |
 | INFRA-13 | Switch to CPU-only torch wheel to drop ~1 GB CUDA/triton from the 3.2 GB image (cuts pull time + disk) | CLI | OPEN-9 |
 
@@ -69,6 +70,6 @@
 ---
 
 ## Milestone line
-`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.5.0 governance → v0.6.0 multi-format + fixes → v0.7.0 build-off-server CI/CD (live via pull, proxied) → (next) push-to-deploy (INFRA-12) + smoke-tested + demo linked`
+`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.5.0 governance → v0.6.0 multi-format + fixes → v0.7.0 build-off-server CI/CD (live via pull, proxied) → v0.7.2 shelved (container stopped, revivable) → (on revive) push-to-deploy (INFRA-12) + smoke-tested + demo linked`
 
 *End of ROADMAP — AskDoc*

@@ -1,6 +1,7 @@
 # MASTER CANON — AskDoc (aidemo)
-**Last Updated:** September 14, 2026 (session 2)
-**Current Version:** v0.7.1
+**Last Updated:** September 16, 2026 (session 3)
+**Current Version:** v0.7.2
+**Status:** **SHELVED** as of v0.7.2 — container stopped, revivable via Deploy (see §5 v0.7.2 revive procedure).
 **Stack:** Python 3.11 · FastAPI · sentence-transformers · Anthropic Claude (swappable → OpenAI) · Docker · Coolify · Cloudflare · Hetzner
 
 > Bootstrap canon. This project has no `_canon/apply.php` machinery — this file is
@@ -174,6 +175,14 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Added OPEN-8 (INFRA-12) and OPEN-9 (INFRA-13); standardised RAM as "4 GB nominal (~3.7 GB usable)".
 - **Outcome:** canon and roadmap internally consistent; no image or deploy change.
 
+### [v0.7.2] — Sept 16, 2026 — Shelved (resource conservation), no code change
+**Summary:** AskDoc container stopped in Coolify to free resources on the shared 4 GB VPS; app config, domain, and env vars retained — this is a pause, not a teardown.
+- Measured runtime cost before stopping (closes OPEN-7): 202 MiB RAM (5.3%), 0.12% CPU idle; ~3.2 GB image on disk. Stopping freed ~400 MiB RAM total and dropped swap from ~524 MiB to ~165 MiB.
+- **Reason:** 4 GB nominal (~3.7 GB usable) box shared with PureOps + client sites; removing AskDoc's idle footprint and (more importantly) its under-load spike risk. Revisit when on a larger VPS.
+- Coolify "Stop" also ran Docker cleanup, pruning the parked image; revive re-pulls from GHCR.
+- **Revive procedure:** Coolify → `aidemo` → **Deploy** (re-pulls `ghcr.io/mcsp-web/aidemo:latest`, ~minutes) → confirm **Running** + `/health` 200 → re-enable the demo link (set `AI_DEMO_URL` in the mcspconsulting app). No rebuild needed; the image is in GHCR. If the pull fails `unauthorized`, the host's GHCR token has expired — re-run the §4.4 `docker login ghcr.io` first. A new/larger VPS needs that login before its first deploy.
+- **Outcome:** AskDoc offline — `aidemo.mcspconsulting.com` returns 503 "no available server" (observed Sept 16, 2026). Config, domain, env vars, and the GHCR image are preserved; revivable without a rebuild.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -195,12 +204,13 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Image builds moved to GitHub Actions → GHCR; Coolify pulls the prebuilt image (INFRA-11, v0.7.0).
 - DNS **proxied** (orange) confirmed — `CF-RAY` header observed live on `aidemo.mcspconsulting.com` (OPEN-2 closed).
 - Domain routing survives a redeploy — after the v0.7.0 pull redeploy, `GET /` via the domain returned 200 and `/health` returned 200; re-checked Sept 14 (OPEN-5 closed). `SERVICE_FQDN_ASKDOC_8000` is committed in `docker-compose.yml`.
+- Runtime cost measured before shelving: 202 MiB RAM (5.3%), 0.12% CPU idle, ~3.2 GB image; stopping freed ~400 MiB RAM and cut swap ~524 → ~165 MiB (OPEN-7 closed).
+- **Shelved** (v0.7.2): container stopped in Coolify to conserve the shared VPS; revive via Deploy — see §5 v0.7.2.
 
 ### ⏳ OPEN — do these next
 - **OPEN-3 — Live smoke test (BOLD, James):** load the URL, upload a PDF, ask a question, confirm a real Claude answer **and** the sources panel. This is the only proof the key + live LLM call work.
 - **OPEN-4 — Set the Coolify reverse-proxy client-body-size to ~25 MB** — the real backstop behind the in-app 20 MB cap. *(James)*
 - **OPEN-6 — Tidy domains.** Ensure only `aidemo.mcspconsulting.com` remains — delete the auto `*.sslip.io` domain and the unused `www.aidemo` variant if still present.
-- **OPEN-7 — Watch runtime RAM + disk on the shared box.** The VPS no longer builds — images come from GitHub Actions → GHCR — so the original build-time RAM risk is gone. What remains is the running container's footprint (torch + the embedding model in memory) on a 4 GB (~3.7 GB usable) box shared with PureOps, MinIO, and client sites, plus disk for pulled image layers (~3.2 GB each). Check container memory in Coolify after deploys and prune old images. INFRA-13 (OPEN-9) shrinks the image and pull; don't assume it cuts RAM without measuring. *(James)*
 - **OPEN-8 — Actions-triggered deploy (INFRA-12).** Add a `deploy` job (`needs: build`) to `build-image.yml` that calls Coolify's deploy webhook after a green build — restores push-to-deploy without the build race; Coolify's git auto-deploy stays off. Needs `COOLIFY_TOKEN` + `COOLIFY_DEPLOY_URL` as repo secrets, and `coolify.mcspconsulting.com` reachable from GitHub runners. *(James: token + secrets · CLI: workflow job)*
 - **OPEN-9 — CPU-only torch (INFRA-13).** Install torch from the CPU wheel index to drop ~1 GB of CUDA/triton from the ~3.2 GB image (smaller pull + disk). Changes image contents and forces a full CI rebuild — its own concern, propose-first. *(CLI)*
 
@@ -208,4 +218,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.7.1*
+*End of MASTER CANON — AskDoc v0.7.2*
