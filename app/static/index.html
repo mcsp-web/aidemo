@@ -56,6 +56,7 @@
     font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em;
   }
   .brand p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .edition { color: var(--accent, #0f766e); font-weight: 600; }
 
   .card {
     background: var(--surface);
@@ -199,8 +200,8 @@
     <div class="brand">
       <div class="mark">A</div>
       <div>
-        <h1>Ask Your Document</h1>
-        <p>AI answers, grounded in your file</p>
+        <h1>Ask Your Document<span id="edition" class="edition" hidden> Lite</span></h1>
+        <p id="tagline">AI answers, grounded in your file</p>
       </div>
     </div>
 
@@ -270,6 +271,16 @@
   const ALLOWED_EXTS = [".pdf", ".docx", ".doc", ".txt", ".md"];
   // "page" for real pages (PDF), "part" for synthesized units (docx/txt/md).
   let sourceKind = "page";
+
+  // The same page serves both engines; /health says which one is running.
+  // RAG sources carry a similarity score; Lite sources are exact quotes cited by Claude.
+  fetch("/health").then(r => r.json()).then(h => {
+    if (h.engine === "lite") {
+      document.getElementById("edition").hidden = false;
+      document.getElementById("tagline").textContent = "Reads your whole file, cites the exact passage";
+      document.title = "Ask Your Document Lite";
+    }
+  }).catch(() => {});
 
   function sourceLabel(n) {
     return `${sourceKind === "part" ? "Part" : "Page"} ${n}`;
@@ -363,7 +374,8 @@
       chip.textContent = sourceLabel(s.page);
       const body = document.createElement("div");
       body.className = "src-body";
-      body.innerHTML = `<span class="pg">${sourceLabel(s.page)} · match ${(s.score*100).toFixed(0)}%</span>`;
+      const how = s.score == null ? "quoted" : `match ${(s.score*100).toFixed(0)}%`;
+      body.innerHTML = `<span class="pg">${sourceLabel(s.page)} · ${how}</span>`;
       body.appendChild(document.createTextNode(s.text));
       chip.addEventListener("click", () => body.classList.toggle("show"));
       bodies.push([chip, body]);
