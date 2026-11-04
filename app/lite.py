@@ -26,8 +26,10 @@ from .extract import _clean, extract_pages
 SYSTEM_PROMPT = (
     "You answer questions about the document provided, using only that document. "
     "If the answer is not in the document, say you couldn't find it in the document "
-    "rather than guessing. Be concise, quote figures exactly, and write plain text "
-    "without Markdown formatting."
+    "rather than guessing. When a question needs a calculation, say which figures from "
+    "the document you used and why. If the document does not cover the exact situation "
+    "asked about, say so before giving the closest answer it supports. Be concise, quote "
+    "figures exactly, and write plain text without Markdown formatting."
 )
 
 NOT_FOUND = "I couldn't find that in the document."
