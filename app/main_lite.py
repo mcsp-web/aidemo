@@ -8,22 +8,27 @@ Same contract and same page as main.py (the RAG demo), so the UI is shared:
   POST /ask      -> answer a question from the whole document, with citations
   GET  /health   -> liveness, plus which engine is running ("lite")
 
+Each visitor has their own document, keyed by a random session cookie, so a
+file one visitor uploads is never visible to another. Documents live in memory,
+expire after an hour unused, and the oldest are dropped beyond a fixed count.
+
 Lite sends the whole document with every question, so the public demo has
 spending guards: a daily question cap for the whole site and a short-window
-limit per visitor. Both are in memory and reset when the container restarts.
+limit per visitor. All of this is in memory and resets when the container restarts.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import secrets
 import threading
 import time
-from collections import deque
+from collections import OrderedDict, deque
 from datetime import date
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -39,8 +44,52 @@ STATIC_DIR = Path(__file__).parent / "static"
 ALLOWED_EXTENSIONS = (".pdf", ".docx", ".doc", ".txt", ".md")
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
-# One shared document for the demo, as in the RAG demo (canon D-4).
-document = LiteDocument()
+COOKIE = "askdoc_session"
+
+
+class DocumentStore:
+    """One document per visitor session. Thread-safe; expires unused documents
+    and drops the least recently used beyond LITE_MAX_DOCS."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.docs: OrderedDict[str, tuple[LiteDocument, float]] = OrderedDict()
+
+    def _prune(self, now: float) -> None:
+        ttl = int(os.getenv("LITE_DOC_TTL_SECONDS", "3600"))
+        for sid in [s for s, (_, used) in self.docs.items() if now - used > ttl]:
+            del self.docs[sid]
+        limit = int(os.getenv("LITE_MAX_DOCS", "40"))
+        while len(self.docs) > limit:
+            self.docs.popitem(last=False)
+
+    def get(self, sid: str | None) -> LiteDocument | None:
+        if not sid:
+            return None
+        now = time.monotonic()
+        with self.lock:
+            self._prune(now)
+            entry = self.docs.get(sid)
+            if entry is None:
+                return None
+            self.docs[sid] = (entry[0], now)
+            self.docs.move_to_end(sid)
+            return entry[0]
+
+    def put(self, sid: str, doc: LiteDocument) -> None:
+        now = time.monotonic()
+        with self.lock:
+            self.docs[sid] = (doc, now)
+            self.docs.move_to_end(sid)
+            self._prune(now)
+
+
+store = DocumentStore()
+
+
+def session_id(request: Request) -> str | None:
+    value = request.cookies.get(COOKIE)
+    return value if value and 20 <= len(value) <= 64 else None
 
 
 class AskRequest(BaseModel):
@@ -88,24 +137,43 @@ def visitor_id(request: Request) -> str:
 
 
 @app.get("/health")
-def health() -> dict:
-    return {"status": "ok", "engine": "lite", "document": document.filename, "ready": document.ready}
+def health(request: Request) -> dict:
+    # "document" and "ready" describe this visitor's own document only.
+    doc = store.get(session_id(request))
+    return {
+        "status": "ok",
+        "engine": "lite",
+        "document": doc.filename if doc else None,
+        "ready": bool(doc and doc.ready),
+        "kind": doc.kind if doc else None,
+    }
 
 
 @app.post("/upload")
-async def upload(file: UploadFile = File(...)) -> dict:
+async def upload(request: Request, response: Response, file: UploadFile = File(...)) -> dict:
     if not file.filename or not file.filename.lower().endswith(ALLOWED_EXTENSIONS):
         raise HTTPException(400, "Please upload a PDF, Word (.docx), text, or Markdown file.")
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, "File too large (20 MB max)")
+    # Built into a fresh document first: a failed upload leaves the visitor's
+    # current document in place.
+    doc = LiteDocument()
     try:
-        n = await run_in_threadpool(document.build, data, file.filename)
+        n = await run_in_threadpool(doc.build, data, file.filename)
     except TooLarge as e:
         raise HTTPException(413, str(e))
     except ValueError as e:
         raise HTTPException(422, str(e))
-    return {"filename": file.filename, "chunks": n, "kind": document.kind}
+
+    sid = session_id(request) or secrets.token_urlsafe(24)
+    store.put(sid, doc)
+    response.set_cookie(
+        COOKIE, sid, httponly=True, samesite="lax",
+        secure=request.url.scheme == "https",
+        max_age=int(os.getenv("LITE_DOC_TTL_SECONDS", "3600")),
+    )
+    return {"filename": file.filename, "chunks": n, "kind": doc.kind}
 
 
 @app.post("/ask")
@@ -115,7 +183,8 @@ async def ask(req: AskRequest, request: Request) -> dict:
         raise HTTPException(400, "Ask a question first.")
     if len(question) > 1000:
         raise HTTPException(400, "Please keep questions under 1,000 characters.")
-    if not document.ready:
+    document = store.get(session_id(request))
+    if document is None or not document.ready:
         raise HTTPException(409, "Upload a document first.")
     if not os.getenv("ANTHROPIC_API_KEY"):
         raise HTTPException(503, "The AI service isn't configured on this server.")

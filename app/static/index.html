@@ -281,6 +281,15 @@
       document.getElementById("edition").hidden = false;
       document.getElementById("tagline").textContent = "Reads your whole file, cites the exact passage";
       document.title = "Ask Your Document Lite";
+      // Lite keeps each visitor's own document for an hour: after a refresh,
+      // carry on with it instead of asking for the file again.
+      if (h.ready && h.document) {
+        if (h.kind) sourceKind = h.kind;
+        statusEl.classList.add("show");
+        statusName.textContent = h.document;
+        statusMeta.textContent = "Ready · still loaded";
+        setReady(true);
+      }
     }
   }).catch(() => {});
 

@@ -141,7 +141,7 @@ print("[ok] Lite app imports no torch, sentence-transformers, numpy or RAG engin
 
 client = TestClient(ml.app)
 h = client.get("/health").json()
-assert h == {"status": "ok", "engine": "lite", "document": None, "ready": False}, h
+assert h == {"status": "ok", "engine": "lite", "document": None, "ready": False, "kind": None}, h
 assert client.post("/ask", json={"question": "hi"}).status_code == 409
 assert client.post("/upload", files={"file": ("a.epub", b"x", "application/epub+zip")}).status_code == 400
 assert client.post("/upload", files={"file": ("old.doc", b"x", "application/msword")}).status_code == 422
@@ -153,6 +153,48 @@ r = client.post("/ask", json={"question": "How much PTO?"})
 assert r.status_code == 200 and r.json()["sources"][0]["page"] == 2 and "usage" not in r.json(), r.text
 assert "Lite" in client.get("/").text
 print("[ok] upload + ask over HTTP; token usage stays in the logs, not the response")
+
+# ---------------------------------------------------------------- one document per visitor
+up = client.post("/upload", files={"file": ("handbook.pdf", HANDBOOK, "application/pdf")})
+sc = up.headers["set-cookie"].lower()
+assert "askdoc_session=" in sc and "httponly" in sc and "samesite=lax" in sc, sc
+h = client.get("/health").json()
+assert h["ready"] and h["document"] == "handbook.pdf" and h["kind"] == "page", h
+print("[ok] upload sets an HttpOnly session cookie; a refresh still finds the visitor's document")
+
+stranger = TestClient(ml.app)
+h = stranger.get("/health").json()
+assert h["ready"] is False and h["document"] is None, h
+r = stranger.post("/ask", json={"question": "How much PTO?"}, headers={"cf-connecting-ip": "9.9.9.9"})
+assert r.status_code == 409, r.text
+forged = TestClient(ml.app, cookies={"askdoc_session": "x" * 32})
+assert forged.get("/health").json()["ready"] is False
+print("[ok] another visitor (or a guessed cookie) sees no document and cannot ask about it")
+
+stranger.post("/upload", files={"file": ("notes.md", b"# Notes\n\nThe deadline is March 15.", "text/markdown")})
+assert stranger.get("/health").json()["document"] == "notes.md"
+assert client.get("/health").json()["document"] == "handbook.pdf"
+print("[ok] two visitors keep separate documents")
+
+r = client.post("/upload", files={"file": ("scan.pdf", pdf(["", ""]), "application/pdf")})
+assert r.status_code == 422 and client.get("/health").json()["document"] == "handbook.pdf"
+print("[ok] a failed upload leaves the visitor's document in place")
+
+st = ml.DocumentStore()
+os.environ["LITE_MAX_DOCS"] = "2"
+for sid in ("a" * 24, "b" * 24, "c" * 24):
+    d = LiteDocument(); d.build(HANDBOOK, sid[0] + ".pdf"); st.put(sid, d)
+assert st.get("a" * 24) is None and st.get("c" * 24) is not None
+del os.environ["LITE_MAX_DOCS"]
+os.environ["LITE_DOC_TTL_SECONDS"] = "0"
+import time as _t; _t.sleep(0.01)
+assert st.get("c" * 24) is None
+del os.environ["LITE_DOC_TTL_SECONDS"]
+print("[ok] store drops the oldest beyond LITE_MAX_DOCS and expires unused documents")
+
+from app.lite import SYSTEM_PROMPT  # noqa: E402
+assert "calculation" in SYSTEM_PROMPT and "exact situation" in SYSTEM_PROMPT
+print("[ok] system prompt asks for the figures behind any calculation")
 
 r = client.post("/ask", json={"question": "please fail"})
 assert r.status_code == 502 and "try again" in r.json()["detail"], r.text
