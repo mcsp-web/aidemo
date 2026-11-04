@@ -1,6 +1,6 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.8.1 · Nov 4, 2026**
-**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); v0.8.1 (one document per visitor, D-6) pushed, needs a Redeploy. **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
+**Derived from `MASTER_CANON.md` v0.8.2 · Nov 4, 2026**
+**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one document per visitor (D-6); smoke test passed (v0.8.2). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -40,6 +40,9 @@
 | INFRA-15 | Lite deployed in Coolify; `aidemo.mcspconsulting.com` moved from the RAG resource (RAG placeholder `rag.mcspconsulting.com:8000`) | v0.8.1 |
 | HARDEN-09 | One document per visitor — session cookie, 1 h expiry, LRU cap (D-6); refresh keeps it, other visitors never see it | v0.8.1 |
 | APP-15 | Calculation instruction in the Lite prompt (smoke-test Q8) | v0.8.1 |
+| INFRA-16 | Lite live smoke test — all checks pass on `claude-haiku-5-5` | v0.8.2 |
+| INFRA-18 | `www.aidemo.mcspconsulting.com` removed from the Lite resource | v0.8.2 |
+| APP-16 | Restored document hides the "Upload a document to begin" prompt | v0.8.2 |
 
 ---
 
@@ -47,8 +50,8 @@
 
 | ID | Item | Owner | Canon ref |
 |---|---|---|---|
-| INFRA-16 | Redeploy for v0.8.1, then finish the smoke test: total-cost question, refresh, private window, `.jpg` upload (10/12 already passed) | **James** | OPEN-11 |
-| INFRA-18 | Remove `www.aidemo.mcspconsulting.com` from the Lite resource | **James** | OPEN-12 |
+| INFRA-19 | Switch off Coolify auto-deploy on the Lite resource (a push deploys before CI publishes the image) | **James** | OPEN-13 |
+| APP-17 | Watch for repeated sentences in answers; capture raw blocks if it recurs | CLI | OPEN-14 |
 | INFRA-05 | RAG live smoke test (on revive, on its own subdomain) | **James** | OPEN-3 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
@@ -61,10 +64,10 @@
 
 | ID | Item | Notes |
 |---|---|---|
-| GTM-01 | Screenshot the live Lite demo for the Fiverr gallery (image 3, sources panel open) | After INFRA-16 |
+| GTM-01 | Screenshot the live Lite demo for the Fiverr gallery (image 3, sources panel open) | Unblocked |
 | GTM-02 | Record the 30-second demo video (own voice + screen recording) | Script already drafted |
-| GTM-03 | Turn on the "see a live demo" link in the mcspconsulting AI service page (`AI_DEMO_URL`) | After INFRA-16 |
-| GTM-05 | Switch on the AskDoc Lite live link in the portfolio admin | After INFRA-16 |
+| GTM-03 | Turn on the "see a live demo" link in the mcspconsulting AI service page (`AI_DEMO_URL`) | Unblocked |
+| GTM-05 | Switch on the AskDoc Lite live link in the portfolio admin | Unblocked |
 | GTM-04 | Publish the Fiverr gig with the demo linked | After GTM-01/02 |
 
 ---

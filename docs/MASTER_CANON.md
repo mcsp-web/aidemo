@@ -1,7 +1,7 @@
 # MASTER CANON — AskDoc (aidemo)
 **Last Updated:** November 4, 2026 (session 4)
-**Current Version:** v0.8.1
-**Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one document per visitor from v0.8.1 (D-6) — v0.8.1 needs a Redeploy to go live. **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
+**Current Version:** v0.8.2
+**Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one document per visitor (D-6), smoke test passed (v0.8.2). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
 > Bootstrap canon. This project has no `_canon/apply.php` machinery — this file is
@@ -65,7 +65,7 @@ GET  /                                                 -> index.html
 | Variable | Default | Notes |
 |---|---|---|
 | `LLM_PROVIDER` | `anthropic` | or `openai` |
-| `LLM_MODEL` | `claude-haiku-4-5-20251001` | e.g. a Sonnet model for higher quality, or `gpt-4o-mini` |
+| `LLM_MODEL` | `claude-haiku-4-5-20251001` | e.g. a Sonnet model for higher quality, or `gpt-4o-mini`. **Live Lite resource: `claude-haiku-5-5`** (set in Coolify, Nov 4, 2026) |
 | `ANTHROPIC_API_KEY` | — | required for Claude; **set in Coolify UI only, never in repo** |
 | `OPENAI_API_KEY` | — | only if provider = openai (RAG only; Lite is Claude-only because it relies on Claude's citations) |
 | `LITE_DAILY_QUESTIONS` | `300` | Lite: questions per day for the whole demo (in memory, resets on restart) |
@@ -85,7 +85,7 @@ GET  /                                                 -> index.html
 | Coolify | `https://coolify.mcspconsulting.com` · project **aidemo** / environment **production** |
 | App resource | Application (Docker Compose build pack), source = **GitHub App** (`mcsp-web`), repo `aidemo`, branch `main` |
 | Auth to GitHub | **GitHub App source** (not a deploy key) — enables auto-deploy webhooks. Org deploy-keys policy left **Disabled** |
-| Auto-deploy | **Manual** (auto-deploy off); Actions-triggered deploy planned (INFRA-12) |
+| Auto-deploy | RAG: **Manual** (auto-deploy off). Lite: was created with **Deploy on push (webhooks)** — must be switched off (OPEN-13), because a push deploys before CI has published the new image. Actions-triggered deploy planned for both (INFRA-12) |
 | Build | GitHub Actions builds → GHCR; Coolify pulls `ghcr.io/mcsp-web/aidemo:latest` (`pull_policy: always`). **VPS never builds.** |
 | Domain | `aidemo.mcspconsulting.com` → Cloudflare A record → `see coolify.mcspconsulting.com / Hetzner console` |
 | DNS state | **Proxied (orange)** — confirmed live via `Server: cloudflare` + `CF-RAY` response headers (OPEN-2 closed) |
@@ -225,6 +225,15 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Verified:** all three test scripts pass; browser check: refresh keeps the visitor's file, a second browser context sees none.
 - **Outcome:** committed and pushed; goes live on the next manual Redeploy of the Lite resource.
 
+### [v0.8.2] — Nov 4, 2026 — Lite smoke test complete; deploy race found; restored-document UI
+**Summary:** v0.8.1 is live and every smoke test passes; one deploy-order trap and one small UI leftover fixed or logged.
+- **Deploy race:** the Lite resource was created with Coolify auto-deploy **on** ("Deploy on push (webhooks)"). The v0.8.1 push deployed `36956a0` at once and pulled the *previous* `aidemo-lite:latest`, because `build-lite` only finished minutes later; the refresh test then failed against old code. A manual Redeploy after the green build fixed it. Rule (already §4.4 for RAG): CI green → then Deploy. Auto-deploy to be switched off (OPEN-13) until INFRA-12 deploys from the workflow.
+- **Smoke test (James, live, `LLM_MODEL=claude-haiku-5-5`):** total-cost calculation passed (Q8 now correct, figures shown), bundle + consultation total passed, refresh keeps the document ("Ready · still loaded"), a private window sees no document, a `.jpg` is refused with the file-type message, parking fee → "couldn't find" with no invention. With v0.8.1's 10/12, all checks pass (OPEN-11 closed). `www.aidemo` domain removed (OPEN-12 closed).
+- **UI fix:** after a refresh restores the visitor's document, the "Upload a document to begin" prompt is now removed (`app/static/index.html`).
+- **Watch item:** one restored-session answer repeated its first sentence ("The current medical director is Dr. Samuel Okafor. The current medical director is…"). Text blocks are joined exactly as the API returns them, so this is model output around a citation, not a join bug; re-check if it recurs (OPEN-14).
+- **Verified:** all three test scripts pass.
+- **Outcome:** committed and pushed; goes live on a manual Redeploy after `build-lite` is green.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -251,11 +260,12 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Runtime cost measured before shelving: 202 MiB RAM (5.3%), 0.12% CPU idle, ~3.2 GB image; stopping freed ~400 MiB RAM and cut swap ~524 → ~165 MiB (OPEN-7 closed).
 - **Shelved** (v0.7.2): container stopped in Coolify to conserve the shared VPS; revive via Deploy — see §5 v0.7.2.
 - **AskDoc Lite built** (v0.8.0): whole-document + citations edition, shared extraction module, own CI image `ghcr.io/mcsp-web/aidemo-lite`; all three test scripts green; pushed.
-- **AskDoc Lite live** at `aidemo.mcspconsulting.com` (v0.8.1, OPEN-10 closed); smoke test 10/12 (OPEN-11 partly done); per-visitor documents + calculation prompt pushed.
+- **AskDoc Lite live** at `aidemo.mcspconsulting.com` (v0.8.1, OPEN-10 closed); per-visitor documents + calculation prompt live.
+- **Lite smoke test passed in full** (v0.8.2, OPEN-11 and OPEN-12 closed); `LLM_MODEL=claude-haiku-5-5` on the live resource.
 
 ### ⏳ OPEN — do these next
-- **OPEN-11 — Finish the Lite smoke test (BOLD, James):** after the build-lite run for v0.8.1 is green, **Redeploy** the Lite resource. Then: (a) re-ask the total-cost question (expect $103, or a note that the document only prices late cancellations); (b) refresh → "Ready · still loaded"; (c) open a **private window** → no document, asking is blocked until an upload; (d) drag a `.jpg` into the upload box → "Please choose a PDF, Word, text, or Markdown file". Optionally set `LLM_MODEL=claude-haiku-5-5` first. Supersedes OPEN-3 for the public demo.
-- **OPEN-12 — Remove `www.aidemo.mcspconsulting.com`** from the Lite resource's domains (no DNS behind it), then Redeploy. *(James)*
+- **OPEN-13 — Switch off auto-deploy on the Lite resource (James, Coolify):** Configuration → Advanced → Deployment → Auto deploy → the off/manual option → Save. Then every deploy is: `build-lite` green → Redeploy.
+- **OPEN-14 — Watch for repeated sentences in answers** (one seen on Nov 4). If it recurs, capture the raw API content blocks from the log and decide on a fix. *(CLI)*
 - **OPEN-3 — Live smoke test (BOLD, James):** load the URL, upload a PDF, ask a question, confirm a real Claude answer **and** the sources panel. This is the only proof the key + live LLM call work.
 - **OPEN-4 — Set the Coolify reverse-proxy client-body-size to ~25 MB** — the real backstop behind the in-app 20 MB cap. *(James)*
 - **OPEN-6 — Tidy domains.** Ensure only `aidemo.mcspconsulting.com` remains — delete the auto `*.sslip.io` domain and the unused `www.aidemo` variant if still present.
@@ -268,4 +278,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.8.1*
+*End of MASTER CANON — AskDoc v0.8.2*
