@@ -1,6 +1,6 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.7.2 · Sept 16, 2026**
-**Status:** **SHELVED** as of v0.7.2 — container stopped, revivable via Deploy (see canon §5 v0.7.2).
+**Derived from `MASTER_CANON.md` v0.8.0 · Nov 4, 2026**
+**Status:** **AskDoc Lite** built, tested, pushed — awaiting first Coolify deploy at `aidemo.mcspconsulting.com` (canon D-5). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -31,14 +31,22 @@
 | INFRA-11 | Build-off-server migration — GitHub Actions → GHCR, Coolify pulls. Done via cloud CI (not local build) | v0.7.0 |
 | INFRA-08 | Domain routing survives a redeploy — verified after the v0.7.0 pull redeploy (`GET /` 200, `/health` 200) | v0.7.0 |
 | INFRA-10 | Runtime cost measured — 202 MiB RAM (5.3%), 0.12% CPU idle, ~3.2 GB image; stopping freed ~400 MiB RAM | v0.7.2 |
+| APP-11 | AskDoc Lite engine — whole document to Claude with built-in citations + prompt caching; answers quote the passage and page | v0.8.0 |
+| APP-12 | Shared extraction module `app/extract.py` (moved verbatim from `rag.py`, re-exported) | v0.8.0 |
+| APP-13 | Shared UI made engine-aware (Lite mark, tagline, "quoted" sources) | v0.8.0 |
+| HARDEN-07 | Lite spending guards — daily cap, per-visitor window, question/document/answer size caps; API errors → 502, no key → 503 | v0.8.0 |
+| HARDEN-08 | `test_lite.py` — real SDK against a fake API server; asserts no torch/numpy/RAG import | v0.8.0 |
+| INFRA-14 | Lite image pipeline — `Dockerfile.lite`, `docker-compose.lite.yml`, `build-lite.yml` → `ghcr.io/mcsp-web/aidemo-lite` | v0.8.0 |
 
 ---
 
-## ⏳ NEXT (finish the deploy — mostly James, small surface)
+## ⏳ NEXT (put Lite live — James, small surface)
 
 | ID | Item | Owner | Canon ref |
 |---|---|---|---|
-| INFRA-05 | Live smoke test: upload a PDF, ask a question, confirm answer + sources | **James** | OPEN-3 |
+| INFRA-15 | Deploy Lite: new Coolify Compose resource from `docker-compose.lite.yml`, `ANTHROPIC_API_KEY`, move `aidemo.mcspconsulting.com` from the RAG resource to `askdoc-lite:8000`, Deploy (pull) | **James** (CLI verifies `/health` → `engine: "lite"`) | OPEN-10 |
+| INFRA-16 | Lite live smoke test: page-specific question shows a "quoted" source on the right page; off-document question → "couldn't find" | **James** | OPEN-11 |
+| INFRA-05 | RAG live smoke test (on revive, on its own subdomain) | **James** | OPEN-3 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
 | INFRA-12 | Actions-triggered deploy — workflow calls Coolify's deploy webhook after a green build, restoring push-to-deploy without the build-race (Coolify git auto-deploy stays off). Needs `COOLIFY_TOKEN` + `COOLIFY_DEPLOY_URL` as repo secrets | James + CLI | OPEN-8 |
@@ -50,9 +58,10 @@
 
 | ID | Item | Notes |
 |---|---|---|
-| GTM-01 | Screenshot the live demo for the Fiverr gallery (image 3, sources panel open) | Needs live URL |
+| GTM-01 | Screenshot the live Lite demo for the Fiverr gallery (image 3, sources panel open) | After INFRA-16 |
 | GTM-02 | Record the 30-second demo video (own voice + screen recording) | Script already drafted |
-| GTM-03 | Turn on the "see a live demo" link in the mcspconsulting AI service page | Gated on the live URL |
+| GTM-03 | Turn on the "see a live demo" link in the mcspconsulting AI service page (`AI_DEMO_URL`) | After INFRA-16 |
+| GTM-05 | Switch on the AskDoc Lite live link in the portfolio admin | After INFRA-16 |
 | GTM-04 | Publish the Fiverr gig with the demo linked | After GTM-01/02 |
 
 ---
@@ -66,10 +75,12 @@
 | APP-07 | Answer confidence + click-through to the exact source page | Polish |
 | HARDEN-04 | Stream-and-reject oversized uploads before full read (chunked read / Content-Length) | Proxy body limit (HARDEN-03) covers the demo |
 | APP-08 | Reskin the frontend in Vue to match the mcspconsulting stack | Optional on-brand v2; standalone app is a fine showcase now |
+| INFRA-17 | RAG on its own server + subdomain (e.g. `rag.mcspconsulting.com`) | When a larger VPS or a client RAG build justifies it (D-5) |
+| APP-14 | Lite: OCR for scanned PDFs (or Claude PDF document input) | Scanned files are refused with a clear message today |
 
 ---
 
 ## Milestone line
-`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.5.0 governance → v0.6.0 multi-format + fixes → v0.7.0 build-off-server CI/CD (live via pull, proxied) → v0.7.2 shelved (container stopped, revivable) → (on revive) push-to-deploy (INFRA-12) + smoke-tested + demo linked`
+`v0.1.0 built → v0.2.0 hardened → v0.3.0 pushed → v0.4.0 live on Coolify → v0.5.0 governance → v0.6.0 multi-format + fixes → v0.7.0 build-off-server CI/CD (live via pull, proxied) → v0.7.2 shelved (container stopped, revivable) → v0.8.0 AskDoc Lite built (whole-document + citations) → Lite live at aidemo (INFRA-15/16) → demo linked → (RAG on revive: own subdomain, push-to-deploy INFRA-12, smoke-tested)`
 
 *End of ROADMAP — AskDoc*

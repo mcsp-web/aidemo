@@ -1,8 +1,8 @@
 # MASTER CANON — AskDoc (aidemo)
-**Last Updated:** September 16, 2026 (session 3)
-**Current Version:** v0.7.2
-**Status:** **SHELVED** as of v0.7.2 — container stopped, revivable via Deploy (see §5 v0.7.2 revive procedure).
-**Stack:** Python 3.11 · FastAPI · sentence-transformers · Anthropic Claude (swappable → OpenAI) · Docker · Coolify · Cloudflare · Hetzner
+**Last Updated:** November 4, 2026 (session 4)
+**Current Version:** v0.8.0
+**Status:** Two editions. **AskDoc Lite** (whole-document + citations, v0.8.0) is built and tested, image publishing via CI — **awaiting its first Coolify deploy** at `aidemo.mcspconsulting.com` (D-5). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
+**Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
 > Bootstrap canon. This project has no `_canon/apply.php` machinery — this file is
 > maintained directly and committed via Claude Code. Canon-first: this file is the
@@ -15,8 +15,10 @@
 **Project:** AskDoc — AI document-Q&A demo ("Ask Your Document")
 **Type:** Portfolio / sales-demo web app for the AI-integration service line
 **Org / Billing / Market:** MCSP Consulting · `mcsp-web` GitHub org · USD · used as a live demo for Fiverr gigs and the mcspconsulting.com AI service page
-**What it does:** upload a PDF → text is extracted, chunked, and embedded locally → ask a question → the closest chunks are retrieved by cosine similarity and sent to an LLM → the answer is generated **from those passages only**, with the source pages shown.
-**Run surface:** public web app at `https://aidemo.mcspconsulting.com`. Local dev at `http://localhost:8000`.
+**What it does:** upload a document (PDF/DOCX/TXT/MD), ask questions, get answers grounded in the file with the sources shown. Two editions share the UI, the extraction code and the API contract:
+- **AskDoc Lite** (`app/main_lite.py` + `app/lite.py`) — the whole document goes to Claude with every question as a citable "custom content" document (one block per page/part), with Claude's built-in citations and prompt caching. Answers quote the exact passage and page. No embeddings, no torch, tiny image and RAM. Capped at `LITE_MAX_CHARS` (~200 pages). The default offer for small businesses.
+- **AskDoc RAG** (`app/main.py` + `app/rag.py` + `app/llm.py`) — text is chunked and embedded locally, the closest chunks are retrieved by cosine similarity and sent to an LLM, which answers **from those passages only**. Built for large document libraries and heavy use. The "big brother" offer.
+**Run surface:** Lite at `https://aidemo.mcspconsulting.com` (from v0.8.0, D-5). RAG offline (shelved); on revive it gets its own subdomain (e.g. `rag.mcspconsulting.com`). Local dev at `http://localhost:8000`.
 **Local path:** `D:\laragon\www\Freelance\`
 **Repo:** `github.com/mcsp-web/aidemo` (branch `main`) — **private** (OPEN-1 closed).
 
@@ -28,28 +30,36 @@ Authoritative files. Audit against these before changing anything.
 
 | Role | File | Authority |
 |---|---|---|
-| Web app / routes | `app/main.py` | FastAPI app; routes `/`, `/upload`, `/ask`, `/health`; upload hardening (size cap + threadpool) |
-| Retrieval engine | `app/rag.py` | Multi-format extraction (pdf/docx/txt/md), chunking, local embeddings, in-memory `DocumentIndex`, cosine search |
+| Web app / routes (RAG) | `app/main.py` | FastAPI app; routes `/`, `/upload`, `/ask`, `/health`; upload hardening (size cap + threadpool) |
+| Shared extraction | `app/extract.py` | Multi-format extraction (pdf/docx/txt/md) → `extract_pages(data, filename) -> (pages, kind)`, plus `_clean`. Used by **both** editions (moved verbatim out of `rag.py` in v0.8.0) |
+| Retrieval engine (RAG) | `app/rag.py` | Chunking, local embeddings, in-memory `DocumentIndex`, cosine search; re-exports the extraction names from `extract.py` so existing imports keep working |
+| Web app / routes (Lite) | `app/main_lite.py` | Same routes and contract as `main.py`; `/health` adds `engine: "lite"`; spending `Guard` (daily cap + per-visitor window); API errors → 502, no key → 503 |
+| Whole-document engine (Lite) | `app/lite.py` | `LiteDocument`: builds citable units, refuses scanned/empty files and documents over `LITE_MAX_CHARS` (`TooLarge` → 413), builds the Messages request (document block, `citations` on, `cache_control` ephemeral), maps `content_block_location` citations → page numbers |
 | Generation layer | `app/llm.py` | Provider-swappable answer generation; `SYSTEM_PROMPT`; answers from passages only |
-| Frontend | `app/static/index.html` | Single-page UI — upload, chat, expandable sources |
+| Frontend | `app/static/index.html` | Single-page UI — upload, chat, expandable sources. **Shared by both editions:** reads `/health`, and when `engine` is `lite` shows the "Lite" mark and tagline and labels sources "quoted" (Lite has no similarity score) instead of "match N%" |
 | Package marker | `app/__init__.py` | Makes `app` an explicit package (empty) |
 | Image build | `Dockerfile` | `python:3.11-slim`; **bakes the embedding model at build time** so the container needs no network for embeddings |
 | CI build + publish | `.github/workflows/build-image.yml` | On push to `main` (image-affecting paths only): **test** job (suite, torch stubbed) → **build** job (`linux/amd64`) → pushes `ghcr.io/mcsp-web/aidemo` `:latest` + `:sha-*` with a registry buildcache. The **only** publisher of the image |
 | Deploy config | `docker-compose.yml` | Service `askdoc`; `image: ghcr.io/mcsp-web/aidemo:latest` + `pull_policy: always` (pulls the CI-built image — no `build:`); `expose: 8000` (no host port); healthcheck on `/health`; env block; `restart: unless-stopped` |
+| Lite image build | `Dockerfile.lite` | `python:3.11-slim` + `requirements-lite.txt` + `app/`; runs `uvicorn app.main_lite:app` with proxy headers. No model download, no torch |
+| Lite CI build + publish | `.github/workflows/build-lite.yml` | On push to `main` (Lite-affecting paths): **test** job (`test_lite.py`) → **build** job → pushes `ghcr.io/mcsp-web/aidemo-lite` `:latest` + `:sha-*`. The **only** publisher of the Lite image |
+| Lite deploy config | `docker-compose.lite.yml` | Service `askdoc-lite`; `image: ghcr.io/mcsp-web/aidemo-lite:latest` + `pull_policy: always`; `expose: 8000`; healthcheck on `/health`; env block (key + Lite limits); `restart: unless-stopped` |
 | Local-run template | `docker-compose.override.yml.example` | Copied to the git-ignored `docker-compose.override.yml` for **local dev only**: `build: .` + `pull_policy: build` (builds from source), tags the result `aidemo-local:dev` so it can't target GHCR, republishes port 8000. Never pushed |
 | Git hygiene | `.gitignore`, `.dockerignore` | `.env` + real override never committed; tests/README kept out of the image |
-| Dependencies | `requirements.txt` | 9 pinned deps (`python-docx` added in v0.6.0) |
+| Dependencies | `requirements.txt` | RAG: 9 pinned deps (`python-docx` added in v0.6.0) |
+| Dependencies (Lite) | `requirements-lite.txt` | 6 pinned deps: fastapi, uvicorn, python-multipart, pypdf, python-docx, anthropic. Changing it rebuilds only the small Lite image |
 | Docs | `README.md` | Run + deploy instructions (kept out of the image via `.dockerignore`) |
-| Tests | `test_pipeline.py`, `test_api.py` | Assert-scripts (not pytest); need dev-only `reportlab` + `httpx`; run from repo root |
+| Tests | `test_pipeline.py`, `test_api.py`, `test_lite.py` | Assert-scripts (not pytest); need dev-only `reportlab` + `httpx`; run from repo root. `test_lite.py` runs the real Anthropic SDK against a local fake API server (request shape, citations → pages, guards, error codes) and asserts the Lite app imports no torch/numpy/RAG engine |
 
 **API contract (frontend ↔ backend):**
 ```
 POST /upload  (multipart: file=<.pdf|.docx|.txt|.md>)  -> { filename, chunks, kind }
 POST /ask     ({ question })                           -> { answer, sources:[{ page, score, text }], kind }
-GET  /health                                           -> { status, document, ready }
+GET  /health                                           -> { status, document, ready }            (RAG)
+                                                          { status, engine:"lite", document, ready }  (Lite)
 GET  /                                                 -> index.html
 ```
-`kind` is `"page"` (PDF) or `"part"` (synthesized units for DOCX/TXT/MD) — the UI labels sources "Page N" / "Part N" from it. Upload errors: unsupported type → 400; legacy `.doc` passes the gate → 422 "save as .docx"; no readable text → 422; > 20 MB → 413.
+`kind` is `"page"` (PDF) or `"part"` (synthesized units for DOCX/TXT/MD) — the UI labels sources "Page N" / "Part N" from it. Upload errors: unsupported type → 400; legacy `.doc` passes the gate → 422 "save as .docx"; no readable text → 422; > 20 MB → 413. **Lite only:** more text than `LITE_MAX_CHARS` → 413 (message points to the RAG edition); `sources[].score` is `null` (citations are quoted, not scored); `/ask` adds 400 for questions over 1,000 characters, 429 from the spending guard, 503 when no API key is set, 502 when the AI service fails.
 
 **Runtime config (env-driven, no code change to switch):**
 | Variable | Default | Notes |
@@ -57,7 +67,11 @@ GET  /                                                 -> index.html
 | `LLM_PROVIDER` | `anthropic` | or `openai` |
 | `LLM_MODEL` | `claude-haiku-4-5-20251001` | e.g. a Sonnet model for higher quality, or `gpt-4o-mini` |
 | `ANTHROPIC_API_KEY` | — | required for Claude; **set in Coolify UI only, never in repo** |
-| `OPENAI_API_KEY` | — | only if provider = openai |
+| `OPENAI_API_KEY` | — | only if provider = openai (RAG only; Lite is Claude-only because it relies on Claude's citations) |
+| `LITE_DAILY_QUESTIONS` | `300` | Lite: questions per day for the whole demo (in memory, resets on restart) |
+| `LITE_VISITOR_QUESTIONS` / `LITE_VISITOR_WINDOW_SECONDS` | `15` / `600` | Lite: questions per visitor (Cloudflare client IP) per window |
+| `LITE_MAX_CHARS` | `400000` | Lite: largest document it accepts (~100k tokens, ~200 pages) |
+| `LITE_MAX_TOKENS` | `800` | Lite: answer length cap |
 
 ---
 
@@ -75,6 +89,7 @@ GET  /                                                 -> index.html
 | DNS state | **Proxied (orange)** — confirmed live via `Server: cloudflare` + `CF-RAY` response headers (OPEN-2 closed) |
 | Domain binding | Added in Coolify UI: `https://aidemo.mcspconsulting.com` on service `askdoc`, internal port `8000`. HTTP→HTTPS redirect enabled |
 | Secrets | `ANTHROPIC_API_KEY` in Coolify Environment Variables UI — the only secret; never in the repo |
+| Lite resource (v0.8.0, to create) | New Coolify Docker Compose resource in project **aidemo**, compose file `docker-compose.lite.yml`, service `askdoc-lite` port `8000`, pulls `ghcr.io/mcsp-web/aidemo-lite:latest` (same host GHCR login as RAG). Takes over the `aidemo.mcspconsulting.com` domain from the stopped RAG resource (D-5) |
 
 ---
 
@@ -106,6 +121,8 @@ GET  /                                                 -> index.html
 - **GHCR login — once per host, before the first pull:** on the Coolify host run `docker login ghcr.io -u <github-username>` and paste a token scoped only to `read:packages` at the prompt (keeps it out of shell history). The package is private, so without this the pull fails `unauthorized`. **Track the token's expiry** — an expired token breaks deploys at the pull step. *(James — credential)*
 - **Deploy is manual** (Coolify auto-deploy off): wait for the Actions run on the target commit to go green, then Deploy in Coolify and confirm the log shows a **pull**, not a build. Push-to-deploy returns with INFRA-12 (OPEN-8).
 - **Rollback:** point `image:` at a previous `:sha-*` tag and deploy. Never restore `build: .` — that brings the server-side torch build back.
+- **Lite follows the same rules:** `ghcr.io/mcsp-web/aidemo-lite` is published only by `build-lite.yml`; Coolify pulls it via `docker-compose.lite.yml`; manual deploy after the Actions run is green. A push touching `app/**` rebuilds **both** images (shared code) — expected.
+- **Tests before push:** all three scripts — `test_pipeline.py`, `test_api.py`, `test_lite.py`.
 
 ### 4.5 Canon update
 On "update canon": append a dated, versioned entry to Section 5 with the files changed, the reason, and the outcome; bump the version in the header; reconcile `ROADMAP.md`.
@@ -183,6 +200,17 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Revive procedure:** Coolify → `aidemo` → **Deploy** (re-pulls `ghcr.io/mcsp-web/aidemo:latest`, ~minutes) → confirm **Running** + `/health` 200 → re-enable the demo link (set `AI_DEMO_URL` in the mcspconsulting app). No rebuild needed; the image is in GHCR. If the pull fails `unauthorized`, the host's GHCR token has expired — re-run the §4.4 `docker login ghcr.io` first. A new/larger VPS needs that login before its first deploy.
 - **Outcome:** AskDoc offline — `aidemo.mcspconsulting.com` returns 503 "no available server" (observed Sept 16, 2026). Config, domain, env vars, and the GHCR image are preserved; revivable without a rebuild.
 
+### [v0.8.0] — Nov 4, 2026 — AskDoc Lite (whole-document edition) + shared extraction module
+**Summary:** added a second, lighter edition of AskDoc that sends the whole document to Claude with built-in citations and prompt caching instead of retrieving chunks. Same UI, same API contract, its own slim image. Built so a live demo can run on the shared 4 GB VPS without torch, and as the default small-business offer.
+- **Shared extraction path (moved, unchanged):** the extraction functions (`_extract_pdf`, `_extract_docx`, `_extract_text`, `_paginate`, `_EXTRACTORS`, `extract_pages`, `_clean`, `_PSEUDO_PAGE_CHARS`) moved verbatim from `app/rag.py` to the new `app/extract.py`; `rag.py` re-exports them, so every existing import still resolves. No behaviour change: `test_pipeline.py` and `test_api.py` pass unchanged.
+- **New:** `app/lite.py` (`LiteDocument`), `app/main_lite.py` (routes + spending `Guard`), `requirements-lite.txt`, `Dockerfile.lite`, `docker-compose.lite.yml`, `.github/workflows/build-lite.yml` (CI → `ghcr.io/mcsp-web/aidemo-lite`), `test_lite.py`.
+- **Changed:** `app/static/index.html` is engine-aware via `/health` (Lite mark, tagline, "quoted" sources); RAG rendering unchanged.
+- **How Lite answers:** one `document` block (source type `content`, one text block per page/part), `citations: {enabled: true}`, `cache_control: ephemeral`, question after it. Citations come back as `content_block_location`; `start_block_index` maps to the page/part number; duplicates removed; at most 6 sources. Scanned PDFs (no text layer) are refused with the OCR message.
+- **Public-demo spending guards:** 300 questions/day for the site, 15 per visitor per 10 minutes, 1,000-character questions, ~200-page documents, 800-token answers — all env-tunable. Token usage (incl. cache reads/writes) is logged, never returned to the browser.
+- **Reason:** RAG is shelved because torch (~3.2 GB image, ~200 MiB idle, spikes under load) doesn't fit the shared VPS; the domain has been returning 503 while still linked from the MCSP site and the Fiverr gig. Most small-business documents fit in one request, where whole-document reading also answers summary and cross-section questions better than top-4 retrieval.
+- **Verified:** `test_lite.py` ALL LITE CHECKS PASSED (real Anthropic SDK against a fake API server: request shape, citation → page 2 mapping + dedupe, not-found fallback, scanned/oversized refusals, 400/409/422/413/429/502/503, no torch/numpy/RAG import); `test_pipeline.py` and `test_api.py` pass.
+- **Outcome:** committed and pushed; Lite image publishes from CI. **Not yet deployed** — needs the new Coolify resource and domain move (OPEN-10), then a live smoke test (OPEN-11, James).
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -190,7 +218,8 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **D-1 — Deploy via Coolify, not Launchpad.** Launchpad clones a fixed Laravel `site-template`, builds with `serversideup/php`, and requires a shared-Postgres database it can't skip. AskDoc is Python/FastAPI with no database. Launchpad can't point at an existing repo and would produce a broken Laravel shell. A hand-made Coolify Docker-Compose resource is the correct tool; it shares the same VPS/Coolify but is not in Launchpad's ledger, so no interference.
 - **D-2 — `expose` over `ports` in base compose.** Lets Coolify's proxy route by domain and avoids host-port collisions on a shared box. Local dev port is restored by a git-ignored override so both workflows stay correct.
 - **D-3 — Provider-swappable LLM + local embeddings.** Only `ANTHROPIC_API_KEY` is needed to run; embeddings are free and local; one env line switches to OpenAI. Doubles as a client-facing selling point.
-- **D-4 — Known limitation, accepted for a demo:** one document held in memory, shared across all visitors — two simultaneous users overwrite each other. Per-session storage / a vector DB is a future feature, not a bug to fix now. The 20 MB cap bounds embedding input, not peak RAM; the reverse-proxy body limit is the real guard (OPEN-4).
+- **D-4 — Known limitation, accepted for a demo:** one document held in memory, shared across all visitors — two simultaneous users overwrite each other. Per-session storage / a vector DB is a future feature, not a bug to fix now. The 20 MB cap bounds embedding input, not peak RAM; the reverse-proxy body limit is the real guard (OPEN-4). Lite inherits the same one-shared-document model.
+- **D-5 — Two editions; Lite takes the public domain (Nov 4, 2026).** AskDoc Lite lives in this repo (shares UI, extraction and tests) as a second image, and takes over `aidemo.mcspconsulting.com`, the URL already linked from the MCSP site and the Fiverr gig. AskDoc RAG is presented as the "big brother" for large document libraries and heavy use; it returns on its own subdomain (e.g. `rag.mcspconsulting.com`) when it has its own server. Client hosting default: MCSP builds and runs a new dedicated server for the client and charges for maintaining it; building on the client's own VPS/server is offered as an option, never assumed.
 
 ---
 
@@ -206,8 +235,11 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Domain routing survives a redeploy — after the v0.7.0 pull redeploy, `GET /` via the domain returned 200 and `/health` returned 200; re-checked Sept 14 (OPEN-5 closed). `SERVICE_FQDN_ASKDOC_8000` is committed in `docker-compose.yml`.
 - Runtime cost measured before shelving: 202 MiB RAM (5.3%), 0.12% CPU idle, ~3.2 GB image; stopping freed ~400 MiB RAM and cut swap ~524 → ~165 MiB (OPEN-7 closed).
 - **Shelved** (v0.7.2): container stopped in Coolify to conserve the shared VPS; revive via Deploy — see §5 v0.7.2.
+- **AskDoc Lite built** (v0.8.0): whole-document + citations edition, shared extraction module, own CI image `ghcr.io/mcsp-web/aidemo-lite`; all three test scripts green; pushed.
 
 ### ⏳ OPEN — do these next
+- **OPEN-10 — Deploy AskDoc Lite (James, Coolify):** confirm the `Build AskDoc Lite image` Actions run is green → in project `aidemo` add a Docker Compose resource from `mcsp-web/aidemo` `main` with compose file `docker-compose.lite.yml` → set `ANTHROPIC_API_KEY` in its env UI → remove `aidemo.mcspconsulting.com` from the stopped RAG resource and bind it to `askdoc-lite` port `8000` → Deploy (log should show a **pull**). If the package pull is `unauthorized`, give the host token access to the new `aidemo-lite` package (or make the package visible to the org) — credential work, James. CLI then checks `/health` returns `engine: "lite"`.
+- **OPEN-11 — Lite live smoke test (BOLD, James):** upload a real PDF, ask a question whose answer is on a specific page, confirm the answer and a "quoted" source showing that page; ask something not in the file and confirm "couldn't find". Supersedes OPEN-3 for the public demo.
 - **OPEN-3 — Live smoke test (BOLD, James):** load the URL, upload a PDF, ask a question, confirm a real Claude answer **and** the sources panel. This is the only proof the key + live LLM call work.
 - **OPEN-4 — Set the Coolify reverse-proxy client-body-size to ~25 MB** — the real backstop behind the in-app 20 MB cap. *(James)*
 - **OPEN-6 — Tidy domains.** Ensure only `aidemo.mcspconsulting.com` remains — delete the auto `*.sslip.io` domain and the unused `www.aidemo` variant if still present.
@@ -215,7 +247,9 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **OPEN-9 — CPU-only torch (INFRA-13).** Install torch from the CPU wheel index to drop ~1 GB of CUDA/triton from the ~3.2 GB image (smaller pull + disk). Changes image contents and forces a full CI rebuild — its own concern, propose-first. *(CLI)*
 
 ### 🔗 CROSS-PROJECT LOOPS (opened this session, tracked elsewhere)
+- **Portfolio** (`mcsp-web/portfolio`) — "AskDoc Lite" listed as its own project, the little brother of AskDoc (RAG). Once OPEN-11 passes, its live link can be switched on.
+- **mcspconsulting AI service page** — once OPEN-11 passes, re-enable the demo link (`AI_DEMO_URL` = `https://aidemo.mcspconsulting.com`).
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.7.2*
+*End of MASTER CANON — AskDoc v0.8.0*

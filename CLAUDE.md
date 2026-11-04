@@ -3,7 +3,7 @@
 Auto-loaded by Claude Code. **Before scoping any work, read `docs/MASTER_CANON.md` (source of truth) and `docs/ROADMAP.md` (derived from it).**
 
 ## What this is
-AskDoc — an AI document-Q&A demo: upload a document, ask questions, get answers grounded in the file with sources shown. FastAPI · local sentence-transformers embeddings · Claude (provider-swappable to OpenAI). Live at https://aidemo.mcspconsulting.com. A sales/portfolio asset for MCSP's AI-integration service line. Full identity: canon Section 1.
+AskDoc — an AI document-Q&A demo: upload a document, ask questions, get answers grounded in the file with sources shown. Two editions in this repo: **AskDoc Lite** (`app/main_lite.py`: whole document to Claude with built-in citations, slim image `aidemo-lite`, the public demo at https://aidemo.mcspconsulting.com) and **AskDoc RAG** (`app/main.py`: local sentence-transformers embeddings + Claude/OpenAI, shelved; own subdomain on revive). Both share `app/extract.py` and the UI. A sales/portfolio asset for MCSP's AI-integration service line. Full identity: canon Section 1.
 
 ## Operating protocol
 - **Recon first.** Read live source before scoping anything that touches it. No blind edits.
@@ -11,12 +11,12 @@ AskDoc — an AI document-Q&A demo: upload a document, ask questions, get answer
 - **One concern per box, one concern per commit.** Never bundle unrelated changes.
 - **CLI delivery:** one prompt per copy box, the run instruction lives inside the box, paste output back before the next is assumed run. Track open loops — never let a handed-off prompt pass silently without a report back.
 - **Production-access rule:** read-only prod checks (container status, logs, `curl` of a route, response headers) may be run directly. Anything needing a secret or credential → James. Anything the CLI can't actually verify — visual/UX, "does it look right", rendered output — is stated in **BOLD** for James and never handed to the CLI.
-- **Tests before push:** `test_pipeline.py` and `test_api.py` must pass before every push and before every canon write. A change to the upload/validation contract or the shared extraction path triggers a full test run at commit. (Tests need dev-only `reportlab` + `httpx`; run from repo root.)
+- **Tests before push:** `test_pipeline.py`, `test_api.py` and `test_lite.py` must pass before every push and before every canon write. A change to the upload/validation contract or the shared extraction path triggers a full test run at commit. (Tests need dev-only `reportlab` + `httpx`; run from repo root.)
 - **Canon-first:** `docs/MASTER_CANON.md` is the source of truth; `docs/ROADMAP.md` is derived. On "update canon": append a dated, versioned entry (files, reason, outcome), bump the header version, reconcile the roadmap.
 
 ## Build & deploy
 - Repo: `mcsp-web/aidemo` (private), branch `main`. Coolify project `aidemo` → production. Auth via GitHub App source. Deploys are currently **MANUAL** in Coolify (auto-deploy off); an Actions-triggered deploy job is planned (ROADMAP `INFRA-12`) but not yet wired.
-- **Rebuild cost:** any change to `requirements.txt` busts the pip layer and forces a full torch rebuild (~2–2.5 GB) on GitHub Actions, not the VPS. The server only ever pulls the finished image.
+- **Rebuild cost:** any change to `requirements.txt` (RAG) busts the pip layer and forces a full torch rebuild (~2–2.5 GB) on GitHub Actions, not the VPS. The server only ever pulls the finished image.
 - Image publishing is GitHub Actions → GHCR ONLY. Never build-and-push the image from a local machine or the server; deploys pull the CI image. (INFRA-11 complete.)
 - Deploy is NOT via Launchpad — Launchpad is a Laravel-only factory (canon Decision D-1). This is a hand-made Coolify Docker-Compose resource.
 - Secrets live only in Coolify env (`ANTHROPIC_API_KEY`). Never in the repo.
