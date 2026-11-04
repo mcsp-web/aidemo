@@ -271,11 +271,13 @@
   const ALLOWED_EXTS = [".pdf", ".docx", ".doc", ".txt", ".md"];
   // "page" for real pages (PDF), "part" for synthesized units (docx/txt/md).
   let sourceKind = "page";
+  let engine = "rag";
 
   // The same page serves both engines; /health says which one is running.
   // RAG sources carry a similarity score; Lite sources are exact quotes cited by Claude.
   fetch("/health").then(r => r.json()).then(h => {
     if (h.engine === "lite") {
+      engine = "lite";
       document.getElementById("edition").hidden = false;
       document.getElementById("tagline").textContent = "Reads your whole file, cites the exact passage";
       document.title = "Ask Your Document Lite";
@@ -326,7 +328,9 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Upload failed.");
       if (data.kind) sourceKind = data.kind;
-      statusMeta.textContent = `Ready · ${data.chunks} sections indexed`;
+      statusMeta.textContent = engine === "lite"
+        ? `Ready · ${data.chunks} ${data.kind === "part" ? "part" : "page"}${data.chunks === 1 ? "" : "s"} read`
+        : `Ready · ${data.chunks} sections indexed`;
       transcript.innerHTML = "";
       setReady(true);
       q.focus();
