@@ -1,0 +1,25 @@
+# AskDoc Lite on Coolify: a separate Docker Compose resource from the RAG demo.
+services:
+  askdoc-lite:
+    image: ghcr.io/mcsp-web/aidemo-lite:latest
+    pull_policy: always
+    expose:
+      - "8000"
+    environment:
+      - SERVICE_FQDN_ASKDOC_8000=/
+      - APP_PORT=8000
+      # Set in the Coolify UI only, never in the repo.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4-5-20251001}
+      # Spending guards for the public demo (questions per day, per visitor per 10 minutes).
+      - LITE_DAILY_QUESTIONS=${LITE_DAILY_QUESTIONS:-300}
+      - LITE_VISITOR_QUESTIONS=${LITE_VISITOR_QUESTIONS:-15}
+      # About 200 pages of text; larger documents are pointed to the RAG version.
+      - LITE_MAX_CHARS=${LITE_MAX_CHARS:-400000}
+    healthcheck:
+      test: ["CMD","python","-c","import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

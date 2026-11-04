@@ -1,0 +1,14 @@
+# AskDoc Lite: the whole-document engine. No embedding model, so the image is
+# small (a few hundred MB instead of ~3 GB) and the container idles on little RAM.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements-lite.txt .
+RUN pip install --no-cache-dir -r requirements-lite.txt
+
+# app/ also holds the RAG engine's files; main_lite never imports them.
+COPY app ./app
+
+EXPOSE 8000
+CMD ["uvicorn", "app.main_lite:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
