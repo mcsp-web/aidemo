@@ -1,6 +1,6 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.8.0 · Nov 4, 2026**
-**Status:** **AskDoc Lite** built, tested, pushed — awaiting first Coolify deploy at `aidemo.mcspconsulting.com` (canon D-5). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
+**Derived from `MASTER_CANON.md` v0.8.1 · Nov 4, 2026**
+**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); v0.8.1 (one document per visitor, D-6) pushed, needs a Redeploy. **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -37,6 +37,9 @@
 | HARDEN-07 | Lite spending guards — daily cap, per-visitor window, question/document/answer size caps; API errors → 502, no key → 503 | v0.8.0 |
 | HARDEN-08 | `test_lite.py` — real SDK against a fake API server; asserts no torch/numpy/RAG import | v0.8.0 |
 | INFRA-14 | Lite image pipeline — `Dockerfile.lite`, `docker-compose.lite.yml`, `build-lite.yml` → `ghcr.io/mcsp-web/aidemo-lite` | v0.8.0 |
+| INFRA-15 | Lite deployed in Coolify; `aidemo.mcspconsulting.com` moved from the RAG resource (RAG placeholder `rag.mcspconsulting.com:8000`) | v0.8.1 |
+| HARDEN-09 | One document per visitor — session cookie, 1 h expiry, LRU cap (D-6); refresh keeps it, other visitors never see it | v0.8.1 |
+| APP-15 | Calculation instruction in the Lite prompt (smoke-test Q8) | v0.8.1 |
 
 ---
 
@@ -44,8 +47,8 @@
 
 | ID | Item | Owner | Canon ref |
 |---|---|---|---|
-| INFRA-15 | Deploy Lite: new Coolify Compose resource from `docker-compose.lite.yml`, `ANTHROPIC_API_KEY`, move `aidemo.mcspconsulting.com` from the RAG resource to `askdoc-lite:8000`, Deploy (pull) | **James** (CLI verifies `/health` → `engine: "lite"`) | OPEN-10 |
-| INFRA-16 | Lite live smoke test: page-specific question shows a "quoted" source on the right page; off-document question → "couldn't find" | **James** | OPEN-11 |
+| INFRA-16 | Redeploy for v0.8.1, then finish the smoke test: total-cost question, refresh, private window, `.jpg` upload (10/12 already passed) | **James** | OPEN-11 |
+| INFRA-18 | Remove `www.aidemo.mcspconsulting.com` from the Lite resource | **James** | OPEN-12 |
 | INFRA-05 | RAG live smoke test (on revive, on its own subdomain) | **James** | OPEN-3 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |
 | INFRA-09 | Tidy domains — keep only `aidemo.mcspconsulting.com` | **James** | OPEN-6 |
