@@ -1,6 +1,6 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.8.2 · Nov 4, 2026**
-**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one document per visitor (D-6); smoke test passed (v0.8.2). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
+**Derived from `MASTER_CANON.md` v0.9.0 · Nov 6, 2026**
+**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); v0.9.0 adds up to 5 documents and the `/hoa`, `/dental` and `/` pages with sample packs (D-7), pushed, needs a Redeploy + smoke test. **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -43,6 +43,9 @@
 | INFRA-16 | Lite live smoke test — all checks pass on `claude-haiku-5-5` | v0.8.2 |
 | INFRA-18 | `www.aidemo.mcspconsulting.com` removed from the Lite resource | v0.8.2 |
 | APP-16 | Restored document hides the "Upload a document to begin" prompt | v0.8.2 |
+| APP-18 | Up to 5 documents per visitor, read together; citations name file + page; remove a file | v0.9.0 |
+| APP-19 | Industry pages `/hoa`, `/dental`, `/` on Lite's own page (`lite.html`), accent + starter questions per industry | v0.9.0 |
+| APP-20 | Fictional sample packs (HOA, dental, any business) loadable in one click, readable as PDFs | v0.9.0 |
 
 ---
 
@@ -50,6 +53,7 @@
 
 | ID | Item | Owner | Canon ref |
 |---|---|---|---|
+| INFRA-20 | Redeploy for v0.9.0 after `build-lite` is green, then smoke-test the three pages | **James** | OPEN-15 |
 | INFRA-19 | Switch off Coolify auto-deploy on the Lite resource (a push deploys before CI publishes the image) | **James** | OPEN-13 |
 | APP-17 | Watch for repeated sentences in answers; capture raw blocks if it recurs | CLI | OPEN-14 |
 | INFRA-05 | RAG live smoke test (on revive, on its own subdomain) | **James** | OPEN-3 |

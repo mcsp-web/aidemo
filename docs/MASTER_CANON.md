@@ -1,7 +1,7 @@
 # MASTER CANON — AskDoc (aidemo)
 **Last Updated:** November 4, 2026 (session 4)
-**Current Version:** v0.8.2
-**Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one document per visitor (D-6), smoke test passed (v0.8.2). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
+**Current Version:** v0.9.0
+**Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). v0.9.0 adds up to 5 documents per visitor and industry pages `/hoa` and `/dental` with sample packs (D-7) — pushed, needs a Redeploy and a smoke test. **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
 > Bootstrap canon. This project has no `_canon/apply.php` machinery — this file is
@@ -16,7 +16,7 @@
 **Type:** Portfolio / sales-demo web app for the AI-integration service line
 **Org / Billing / Market:** MCSP Consulting · `mcsp-web` GitHub org · USD · used as a live demo for Fiverr gigs and the mcspconsulting.com AI service page
 **What it does:** upload a document (PDF/DOCX/TXT/MD), ask questions, get answers grounded in the file with the sources shown. Two editions share the UI, the extraction code and the API contract:
-- **AskDoc Lite** (`app/main_lite.py` + `app/lite.py`) — the whole document goes to Claude with every question as a citable "custom content" document (one block per page/part), with Claude's built-in citations and prompt caching. Answers quote the exact passage and page. No embeddings, no torch, tiny image and RAM. Capped at `LITE_MAX_CHARS` (~200 pages). The default offer for small businesses.
+- **AskDoc Lite** (`app/main_lite.py` + `app/lite.py` + `app/static/lite.html`) — every document in the visitor's library (up to 5) goes to Claude with every question, each as its own citable "custom content" document (one block per page/part), with Claude's built-in citations and prompt caching. Answers quote the exact passage, file and page. No embeddings, no torch, tiny image and RAM. Capped at `LITE_MAX_CHARS` (~200 pages) for the whole library. Three industry pages: `/` (any business), `/hoa`, `/dental`, each with a fictional sample pack. The default offer for small businesses.
 - **AskDoc RAG** (`app/main.py` + `app/rag.py` + `app/llm.py`) — text is chunked and embedded locally, the closest chunks are retrieved by cosine similarity and sent to an LLM, which answers **from those passages only**. Built for large document libraries and heavy use. The "big brother" offer.
 **Run surface:** Lite at `https://aidemo.mcspconsulting.com` (from v0.8.0, D-5). RAG offline (shelved); on revive it gets its own subdomain (e.g. `rag.mcspconsulting.com`). Local dev at `http://localhost:8000`.
 **Local path:** `D:\laragon\www\Freelance\`
@@ -33,10 +33,13 @@ Authoritative files. Audit against these before changing anything.
 | Web app / routes (RAG) | `app/main.py` | FastAPI app; routes `/`, `/upload`, `/ask`, `/health`; upload hardening (size cap + threadpool) |
 | Shared extraction | `app/extract.py` | Multi-format extraction (pdf/docx/txt/md) → `extract_pages(data, filename) -> (pages, kind)`, plus `_clean`. Used by **both** editions (moved verbatim out of `rag.py` in v0.8.0) |
 | Retrieval engine (RAG) | `app/rag.py` | Chunking, local embeddings, in-memory `DocumentIndex`, cosine search; re-exports the extraction names from `extract.py` so existing imports keep working |
-| Web app / routes (Lite) | `app/main_lite.py` | Same routes and contract as `main.py`; `/health` adds `engine` and `kind`; `DocumentStore` = one document per visitor (HttpOnly `askdoc_session` cookie, 1 h idle expiry, LRU cap); spending `Guard` (daily cap + per-visitor window); API errors → 502, no key → 503 |
-| Whole-document engine (Lite) | `app/lite.py` | `LiteDocument`: builds citable units, refuses scanned/empty files and documents over `LITE_MAX_CHARS` (`TooLarge` → 413), builds the Messages request (document block, `citations` on, `cache_control` ephemeral), maps `content_block_location` citations → page numbers |
+| Web app / routes (Lite) | `app/main_lite.py` | Routes `/`, `/hoa`, `/dental` (all serve `lite.html`), `/upload` (adds to the library), `/remove`, `/samples/{pack}`, `/ask`, `/health`; `DocumentStore` = one library per visitor (HttpOnly `askdoc_session` cookie, 1 h idle expiry, LRU cap); `sample_pack()` reads each pack once and shares it; spending `Guard` (daily cap + per-visitor window; sample loads not counted); API errors → 502, no key → 503 |
+| Whole-document engine (Lite) | `app/lite.py` | `read_file` → `LiteFile` (citable units; refuses scanned/empty files). `LiteLibrary`: up to `LITE_MAX_FILES` files (`TooMany` → 409) and `LITE_MAX_CHARS` combined (`TooLarge` → 413), checked before anything changes; same file name replaces; builds the Messages request (one document block per file, `citations` on, one `cache_control` breakpoint on the last block), maps `content_block_location` citations → file (`document_index`) + page (`start_block_index`) |
 | Generation layer | `app/llm.py` | Provider-swappable answer generation; `SYSTEM_PROMPT`; answers from passages only |
-| Frontend | `app/static/index.html` | Single-page UI — upload, chat, expandable sources. **Shared by both editions:** reads `/health`, and when `engine` is `lite` shows the "Lite" mark and tagline and labels sources "quoted" (Lite has no similarity score) instead of "match N%" |
+| Frontend (RAG) | `app/static/index.html` | RAG single-page UI — upload, chat, expandable sources. Still contains the v0.8 Lite branches (harmless: RAG never reports `engine: "lite"`) |
+| Frontend (Lite) | `app/static/lite.html` | Lite's own page since v0.9.0 (D-7): industry tabs (Any business / HOA / Dental office) chosen by the address, accent colour per industry, sample pack card with "Load sample documents" and links to read each PDF, file list with remove, add up to 5 files, starter questions per industry, sources labelled file + page. Restores the library after a refresh |
+| Sample packs | `app/static/samples/{hoa,dental,general}/` | Fictional PDFs: Palm Hollow HOA (CC&Rs, bylaws, rules and fees), Brightside Family Dental (office manual, PPO and HMO plan summaries, sterilization SOP), Harbor Logistics (handbook, operations SOPs). Every page footer says "Fictional sample for demonstration" |
+| Sample generator | `tools/samples/make_samples.py` | Rebuilds the sample PDFs from the text in the script (reportlab, dev-only). Not in the image |
 | Package marker | `app/__init__.py` | Makes `app` an explicit package (empty) |
 | Image build | `Dockerfile` | `python:3.11-slim`; **bakes the embedding model at build time** so the container needs no network for embeddings |
 | CI build + publish | `.github/workflows/build-image.yml` | On push to `main` (image-affecting paths only): **test** job (suite, torch stubbed) → **build** job (`linux/amd64`) → pushes `ghcr.io/mcsp-web/aidemo` `:latest` + `:sha-*` with a registry buildcache. The **only** publisher of the image |
@@ -49,17 +52,24 @@ Authoritative files. Audit against these before changing anything.
 | Dependencies | `requirements.txt` | RAG: 9 pinned deps (`python-docx` added in v0.6.0) |
 | Dependencies (Lite) | `requirements-lite.txt` | 6 pinned deps: fastapi, uvicorn, python-multipart, pypdf, python-docx, anthropic. Changing it rebuilds only the small Lite image |
 | Docs | `README.md` | Run + deploy instructions (kept out of the image via `.dockerignore`) |
-| Tests | `test_pipeline.py`, `test_api.py`, `test_lite.py` | Assert-scripts (not pytest); need dev-only `reportlab` + `httpx`; run from repo root. `test_lite.py` runs the real Anthropic SDK against a local fake API server (request shape, citations → pages, guards, error codes) and asserts the Lite app imports no torch/numpy/RAG engine |
+| Tests | `test_pipeline.py`, `test_api.py`, `test_lite.py` | Assert-scripts (not pytest); need dev-only `reportlab` + `httpx`; run from repo root. `test_lite.py` runs the real Anthropic SDK against a local fake API server (request shape, multi-file citations → file + page, limits, remove, sample packs, pages, per-visitor isolation, guards, error codes) and asserts the Lite app imports no torch/numpy/RAG engine |
 
 **API contract (frontend ↔ backend):**
 ```
 POST /upload  (multipart: file=<.pdf|.docx|.txt|.md>)  -> { filename, chunks, kind }
 POST /ask     ({ question })                           -> { answer, sources:[{ page, score, text }], kind }
 GET  /health                                           -> { status, document, ready }            (RAG)
-                                                          { status, engine:"lite", document, ready, kind }  (Lite — this visitor's document only)
+                                                          { status, engine:"lite", document, kind, documents:[{filename, chunks, kind}], ready }  (Lite — this visitor's library only; document/kind = the first file, kept for v0.8 clients)
+
+Lite only (v0.9.0):
+POST /upload        -> adds to the library: { filename, chunks, kind, documents:[…], ready }
+POST /remove        ({ filename })  -> { documents:[…], ready }; 404 if not loaded
+POST /samples/{pack}  (hoa | dental | general)  -> { documents:[…], ready }; replaces the library; 404 unknown pack
+POST /ask           -> sources:[{ file, page, kind, score:null, text }]
+GET  / , /hoa , /dental  -> lite.html
 GET  /                                                 -> index.html
 ```
-`kind` is `"page"` (PDF) or `"part"` (synthesized units for DOCX/TXT/MD) — the UI labels sources "Page N" / "Part N" from it. Upload errors: unsupported type → 400; legacy `.doc` passes the gate → 422 "save as .docx"; no readable text → 422; > 20 MB → 413. **Lite only:** more text than `LITE_MAX_CHARS` → 413 (message points to the RAG edition); `sources[].score` is `null` (citations are quoted, not scored); `/ask` adds 400 for questions over 1,000 characters, 429 from the spending guard, 503 when no API key is set, 502 when the AI service fails.
+`kind` is `"page"` (PDF) or `"part"` (synthesized units for DOCX/TXT/MD) — the UI labels sources "Page N" / "Part N" from it. Upload errors: unsupported type → 400; legacy `.doc` passes the gate → 422 "save as .docx"; no readable text → 422; > 20 MB → 413. **Lite only:** more text than `LITE_MAX_CHARS` across the library → 413 (message points to the RAG edition); more than `LITE_MAX_FILES` files → 409; `sources[].score` is `null` (citations are quoted, not scored); `/ask` adds 400 for questions over 1,000 characters, 429 from the spending guard, 503 when no API key is set, 502 when the AI service fails.
 
 **Runtime config (env-driven, no code change to switch):**
 | Variable | Default | Notes |
@@ -70,10 +80,11 @@ GET  /                                                 -> index.html
 | `OPENAI_API_KEY` | — | only if provider = openai (RAG only; Lite is Claude-only because it relies on Claude's citations) |
 | `LITE_DAILY_QUESTIONS` | `300` | Lite: questions per day for the whole demo (in memory, resets on restart) |
 | `LITE_VISITOR_QUESTIONS` / `LITE_VISITOR_WINDOW_SECONDS` | `15` / `600` | Lite: questions per visitor (Cloudflare client IP) per window |
-| `LITE_MAX_CHARS` | `400000` | Lite: largest document it accepts (~100k tokens, ~200 pages) |
+| `LITE_MAX_CHARS` | `400000` | Lite: most text a visitor's library may hold, all files together (~100k tokens, ~200 pages) |
+| `LITE_MAX_FILES` | `5` | Lite: most documents in one visitor's library |
 | `LITE_MAX_TOKENS` | `800` | Lite: answer length cap |
 | `LITE_DOC_TTL_SECONDS` | `3600` | Lite: a visitor's document is dropped after this long unused (also the cookie lifetime) |
-| `LITE_MAX_DOCS` | `40` | Lite: most documents held at once; the least recently used is dropped first (40 × ~200 pages ≈ tens of MB) |
+| `LITE_MAX_DOCS` | `40` | Lite: most visitor libraries held at once; the least recently used is dropped first (40 × ~200 pages ≈ tens of MB) |
 
 ---
 
@@ -234,6 +245,16 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Verified:** all three test scripts pass.
 - **Outcome:** committed and pushed; goes live on a manual Redeploy after `build-lite` is green.
 
+### [v0.9.0] — Nov 6, 2026 — Several documents per visitor; HOA, dental and any-business pages with sample packs
+**Summary:** James approved (Nov 6) up to 5 documents per visitor and three industry pages, each with its own sample documents, so prospects see their own industry and the multi-file product. Built after the marketplace research showed industry buyers are reached directly, with a demo link per industry.
+- **Engine (`app/lite.py`):** `LiteDocument` replaced by `read_file` → `LiteFile` and `LiteLibrary`. One document block per file, each with citations; one `cache_control` breakpoint on the last block caches the whole library. Citations map `document_index` → file and `start_block_index` → page/part. Limits: `LITE_MAX_FILES` (5) → `TooMany` (409), `LITE_MAX_CHARS` (400,000, now for the whole library) → `TooLarge` (413), both checked before the library changes. A file with the same name replaces the old one. System prompt now plural, and says to report when two documents disagree.
+- **Routes (`app/main_lite.py`):** `/upload` adds to the library; new `/remove` and `/samples/{pack}`; `/`, `/hoa`, `/dental` serve `lite.html`; `/health` adds `documents` (keeps `document`/`kind` as the first file for v0.8 clients). Sample packs are read once and shared; loading one makes no AI call, so it doesn't count against the question guard.
+- **UI (`app/static/lite.html`, new — D-7):** Lite gets its own page; `index.html` stays RAG's. Industry tabs, accent per industry (teal / green / blue), sample pack card with "Load sample documents" and links to open each PDF, file list with remove, up to 5 uploads (several at once), starter questions per industry, sources labelled with file and page. Phone: no sideways scroll, and the chat scrolls into view when a question is asked.
+- **Sample packs (`app/static/samples/`, `tools/samples/make_samples.py`, committed in 2c226ed):** 9 fictional PDFs, 23 pages, about 18,000 characters in total.
+- **Shared extraction path:** unchanged.
+- **Verified:** `test_lite.py` ALL LITE CHECKS PASSED (29 checks, incl. two-file citations, replace by name, limits that leave the library untouched, remove, the three packs, page routes, sample PDFs served, isolation incl. remove by a stranger); `test_pipeline.py` and `test_api.py` pass. Browser run against a fake API: each tab loads its pack, answers cite file + page, refresh keeps the library, remove works, phone width 390 px with no overflow.
+- **Outcome:** committed and pushed; goes live on a manual Redeploy after `build-lite` is green. Live smoke test is OPEN-15.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -244,6 +265,7 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **D-4 — Known limitation, accepted for a demo:** one document held in memory, shared across all visitors — two simultaneous users overwrite each other. Per-session storage / a vector DB is a future feature, not a bug to fix now. The 20 MB cap bounds embedding input, not peak RAM; the reverse-proxy body limit is the real guard (OPEN-4). Lite inherits the same one-shared-document model.
 - **D-5 — Two editions; Lite takes the public domain (Nov 4, 2026).** AskDoc Lite lives in this repo (shares UI, extraction and tests) as a second image, and takes over `aidemo.mcspconsulting.com`, the URL already linked from the MCSP site and the Fiverr gig. AskDoc RAG is presented as the "big brother" for large document libraries and heavy use; it returns on its own subdomain (e.g. `rag.mcspconsulting.com`) when it has its own server. Client hosting default: MCSP builds and runs a new dedicated server for the client and charges for maintaining it; building on the client's own VPS/server is offered as an option, never assumed.
 - **D-6 — Lite keeps one document per visitor (Nov 4, 2026).** Supersedes D-4 for Lite: on a public demo a shared document would let one prospect read another's upload. Session cookie + in-memory store with expiry and an LRU cap; no database, still one small container. RAG keeps D-4 until it is revived (APP-05).
+- **D-7 — Lite has its own page and multi-document libraries (Nov 6, 2026).** The Lite UI (industry tabs, sample packs, a file list) no longer matches RAG's, so `lite.html` replaces the shared `index.html` for Lite; extraction and tests stay shared. A visitor may hold up to 5 files read together, because real buyers' questions span documents (CC&Rs + fee schedule, office manual + insurance plan). Industry pages share one codebase; only words, questions, samples and the accent colour differ.
 
 ---
 
@@ -262,9 +284,11 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **AskDoc Lite built** (v0.8.0): whole-document + citations edition, shared extraction module, own CI image `ghcr.io/mcsp-web/aidemo-lite`; all three test scripts green; pushed.
 - **AskDoc Lite live** at `aidemo.mcspconsulting.com` (v0.8.1, OPEN-10 closed); per-visitor documents + calculation prompt live.
 - **Lite smoke test passed in full** (v0.8.2, OPEN-11 and OPEN-12 closed); `LLM_MODEL=claude-haiku-5-5` on the live resource.
+- **Several documents + industry pages built** (v0.9.0): `/hoa`, `/dental`, `/` with sample packs, up to 5 files per visitor; all three test suites green; pushed.
 
 ### ⏳ OPEN — do these next
 - **OPEN-13 — Switch off auto-deploy on the Lite resource (James, Coolify):** Configuration → Advanced → Deployment → Auto deploy → the off/manual option → Save. Then every deploy is: `build-lite` green → Redeploy.
+- **OPEN-15 — v0.9.0 live smoke test (BOLD, James):** after `build-lite` is green, Redeploy. On `/hoa`: Load sample documents → ask "Can I put up a wood fence, and what does it cost to apply?" → expect "no, vinyl or aluminum only" + $50, quoting the CC&Rs and the Rules and Fees file. On `/dental`: the third-cleaning question → quotes the PPO summary. On `/`: the $3,000 purchase question → department head. Then: add one of your own files (6th file refused), remove one, refresh (library stays), open a private window (empty).
 - **OPEN-14 — Watch for repeated sentences in answers** (one seen on Nov 4). If it recurs, capture the raw API content blocks from the log and decide on a fix. *(CLI)*
 - **OPEN-3 — Live smoke test (BOLD, James):** load the URL, upload a PDF, ask a question, confirm a real Claude answer **and** the sources panel. This is the only proof the key + live LLM call work.
 - **OPEN-4 — Set the Coolify reverse-proxy client-body-size to ~25 MB** — the real backstop behind the in-app 20 MB cap. *(James)*
@@ -278,4 +302,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.8.2*
+*End of MASTER CANON — AskDoc v0.9.0*

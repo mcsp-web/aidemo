@@ -3,7 +3,7 @@
 Auto-loaded by Claude Code. **Before scoping any work, read `docs/MASTER_CANON.md` (source of truth) and `docs/ROADMAP.md` (derived from it).**
 
 ## What this is
-AskDoc — an AI document-Q&A demo: upload a document, ask questions, get answers grounded in the file with sources shown. Two editions in this repo: **AskDoc Lite** (`app/main_lite.py`: whole document to Claude with built-in citations, slim image `aidemo-lite`, the public demo at https://aidemo.mcspconsulting.com) and **AskDoc RAG** (`app/main.py`: local sentence-transformers embeddings + Claude/OpenAI, shelved; own subdomain on revive). Both share `app/extract.py` and the UI. A sales/portfolio asset for MCSP's AI-integration service line. Full identity: canon Section 1.
+AskDoc — an AI document-Q&A demo: upload a document, ask questions, get answers grounded in the file with sources shown. Two editions in this repo: **AskDoc Lite** (`app/main_lite.py`: whole document to Claude with built-in citations, slim image `aidemo-lite`, the public demo at https://aidemo.mcspconsulting.com) and **AskDoc RAG** (`app/main.py`: local sentence-transformers embeddings + Claude/OpenAI, shelved; own subdomain on revive). Both share `app/extract.py` and the tests; Lite has its own page `app/static/lite.html` with industry pages `/hoa`, `/dental` and `/`, and RAG keeps `app/static/index.html`. Sample PDFs live in `app/static/samples/` and are rebuilt by `tools/samples/make_samples.py`. A sales/portfolio asset for MCSP's AI-integration service line. Full identity: canon Section 1.
 
 ## Operating protocol
 - **Recon first.** Read live source before scoping anything that touches it. No blind edits.
