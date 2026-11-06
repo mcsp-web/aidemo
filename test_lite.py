@@ -38,7 +38,11 @@ class FakeAnthropic(BaseHTTPRequestHandler):
             return
         docs = [b for b in body["messages"][0]["content"] if b["type"] == "document"]
         LAST["docs"] = docs
-        if "both" in question:
+        stop = "end_turn"
+        if "long" in question:
+            content = [{"type": "text", "text": "The fee is $50. The committee decides in 30 days. The Board adopts the annual"}]
+            stop = "max_tokens"
+        elif "both" in question:
             content = [{"type": "text", "text": "Both files say so.", "citations": [
                 {"type": "content_block_location", "cited_text": d["source"]["content"][0]["text"],
                  "document_index": i, "document_title": d["title"], "start_block_index": 0, "end_block_index": 1}
@@ -53,7 +57,7 @@ class FakeAnthropic(BaseHTTPRequestHandler):
             content = [{"type": "text", "text": "I couldn't find that in the document."}]
         msg = {
             "id": "msg_test", "type": "message", "role": "assistant", "model": body["model"],
-            "content": content, "stop_reason": "end_turn", "stop_sequence": None,
+            "content": content, "stop_reason": stop, "stop_sequence": None,
             "usage": {"input_tokens": 40, "output_tokens": 18,
                       "cache_creation_input_tokens": 1500, "cache_read_input_tokens": 0},
         }
@@ -115,6 +119,11 @@ print("[ok] real SDK round trip: answer joined, citation mapped to file + page 2
 res = lib.ask("Do we get a company car?")
 assert res["answer"].startswith("I couldn't find") and res["sources"] == []
 print("[ok] no citations -> plain not-found answer, no sources")
+
+from app.lite import CUT_SHORT  # noqa: E402
+res = lib.ask("Give me the long version")
+assert res["answer"] == f"The fee is $50. The committee decides in 30 days.\n\n{CUT_SHORT}", res["answer"]
+print("[ok] an answer stopped by the length limit ends on a full sentence and says it was shortened")
 
 notes = read_file(b"# Notes\n\nThe deadline is March 15.\n\nAnother paragraph.", "notes.md")
 assert notes.kind == "part" and notes.units[0][0] == 1

@@ -29,11 +29,23 @@ SYSTEM_PROMPT = (
     "rather than guessing. When a question needs a calculation, say which figures from "
     "the documents you used and why. If the documents do not cover the exact situation "
     "asked about, say so before giving the closest answer they support. If two documents "
-    "disagree, say so and give both. Be concise, quote figures exactly, and write plain "
-    "text without Markdown formatting."
+    "disagree, say so and give both. Be concise: answer in about 150 words or fewer "
+    "unless the question asks for detail. Quote figures exactly, and write plain text "
+    "without Markdown formatting."
 )
 
 NOT_FOUND = "I couldn't find that in the documents."
+CUT_SHORT = "(Answer shortened. Ask a narrower question for more detail.)"
+
+
+def end_cleanly(text: str) -> str:
+    """An answer stopped by the length limit ends mid-sentence: keep the complete
+    sentences and say it was shortened."""
+    cut = max(text.rfind(". "), text.rfind(".\n"), text.rfind("? "), text.rfind("! "))
+    if text.rstrip().endswith((".", "?", "!")):
+        cut = len(text.rstrip()) - 1
+    kept = text[: cut + 1].rstrip() if cut > 0 else text.rstrip()
+    return f"{kept}\n\n{CUT_SHORT}"
 
 
 def max_chars() -> int:
@@ -163,7 +175,7 @@ class LiteLibrary:
             docs.append(block)
         return {
             "model": model(),
-            "max_tokens": int(os.getenv("LITE_MAX_TOKENS", "800")),
+            "max_tokens": int(os.getenv("LITE_MAX_TOKENS", "1024")),
             "system": SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": docs + [{"type": "text", "text": question}]}],
         }
@@ -205,6 +217,8 @@ class LiteLibrary:
                 sources.append({"file": f.filename, "page": page, "kind": f.kind, "score": None, "text": text})
 
         text = "".join(parts).strip() or NOT_FOUND
+        if getattr(resp, "stop_reason", None) == "max_tokens":
+            text = end_cleanly(text)
         usage = getattr(resp, "usage", None)
         return {
             "answer": text,
