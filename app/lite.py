@@ -1,19 +1,19 @@
 """
 lite.py — AskDoc Lite: the whole-document engine.
 
-No embeddings, no vector search, no torch. The full text of the document is
-sent to Claude as a "custom content" document, one content block per page (or
-per part for DOCX/TXT/MD), with Claude's built-in citations switched on. Every
-answer comes back with the exact quoted passage and the block it came from,
-which maps straight to a page number.
+No embeddings, no vector search, no torch. Every file in a visitor's library is
+sent to Claude as its own "custom content" document, one content block per page
+(or per part for DOCX/TXT/MD), with Claude's built-in citations switched on. Each
+citation names the document and the block it came from, which map straight to a
+file name and a page number.
 
-The document block is marked for prompt caching, so after the first question
-the document is re-read from cache at a fraction of the normal input price.
+The document blocks are marked for prompt caching, so after the first question
+the library is re-read from cache at a fraction of the normal input price.
 
-Trade-off against the RAG engine (rag.py): Lite reads the whole document on
-every question, so it handles summaries and cross-section questions well and
-needs a tiny server, but it is capped by how much text fits in one request.
-Large document libraries are what the RAG engine is for.
+Trade-off against the RAG engine (rag.py): Lite reads everything on every
+question, so it handles summaries and questions that join several files well and
+needs a tiny server, but the library is capped by how much text fits in one
+request. Large document libraries are what the RAG engine is for.
 """
 
 from __future__ import annotations
@@ -24,21 +24,26 @@ from dataclasses import dataclass, field
 from .extract import _clean, extract_pages
 
 SYSTEM_PROMPT = (
-    "You answer questions about the document provided, using only that document. "
-    "If the answer is not in the document, say you couldn't find it in the document "
+    "You answer questions about the documents provided, using only those documents. "
+    "If the answer is not in the documents, say you couldn't find it in the documents "
     "rather than guessing. When a question needs a calculation, say which figures from "
-    "the document you used and why. If the document does not cover the exact situation "
-    "asked about, say so before giving the closest answer it supports. Be concise, quote "
-    "figures exactly, and write plain text without Markdown formatting."
+    "the documents you used and why. If the documents do not cover the exact situation "
+    "asked about, say so before giving the closest answer they support. If two documents "
+    "disagree, say so and give both. Be concise, quote figures exactly, and write plain "
+    "text without Markdown formatting."
 )
 
-NOT_FOUND = "I couldn't find that in the document."
+NOT_FOUND = "I couldn't find that in the documents."
 
 
 def max_chars() -> int:
     # About 4 characters per token: 400,000 characters is roughly 100k tokens,
-    # or around 200 typical pages. Comfortably inside the model's context window.
+    # or around 200 typical pages, across all of a visitor's files together.
     return int(os.getenv("LITE_MAX_CHARS", "400000"))
+
+
+def max_files() -> int:
+    return int(os.getenv("LITE_MAX_FILES", "5"))
 
 
 def model() -> str:
@@ -46,85 +51,127 @@ def model() -> str:
 
 
 class TooLarge(ValueError):
-    """The document has more text than one request can carry."""
+    """The library would hold more text than one request can carry."""
+
+
+class TooMany(ValueError):
+    """The library already holds the most files allowed."""
 
 
 @dataclass
-class LiteDocument:
-    """One document held in memory: its units of text, ready to send whole."""
+class LiteFile:
+    """One readable file: its name, how to label its units, and their text."""
 
-    units: list[tuple[int, str]] = field(default_factory=list)
-    filename: str | None = None
-    # How to label a unit when citing it: "page" (PDF) or "part" (synthesized).
-    kind: str = "page"
-
-    @property
-    def ready(self) -> bool:
-        return bool(self.units)
+    filename: str
+    kind: str  # "page" (PDF) or "part" (synthesized units for DOCX/TXT/MD)
+    units: list[tuple[int, str]]
 
     @property
     def chars(self) -> int:
         return sum(len(t) for _, t in self.units)
 
-    def build(self, data: bytes, filename: str) -> int:
-        # Built into locals and committed at the end, like rag.DocumentIndex:
-        # a failed upload never replaces a document that is already loaded.
-        pages, kind = extract_pages(data, filename)
-        units = [(n, _clean(t)) for n, t in pages]
-        units = [(n, t) for n, t in units if t]
-        if not units:
-            if kind == "page":
-                raise ValueError(
-                    "No readable text found. This looks like a scanned PDF — "
-                    "it would need OCR first."
-                )
-            raise ValueError("No readable text found in this file.")
+    def summary(self) -> dict:
+        return {"filename": self.filename, "chunks": len(self.units), "kind": self.kind}
 
-        total = sum(len(t) for _, t in units)
-        if total > max_chars():
-            raise TooLarge(
-                f"This document has about {total // 2000:,} pages of text, more than "
-                f"AskDoc Lite reads at once (about {max_chars() // 2000:,}). Large "
-                "document libraries are what AskDoc's retrieval version is built for."
+
+def read_file(data: bytes, filename: str) -> LiteFile:
+    """Extract and clean a file, or explain why it can't be read."""
+    pages, kind = extract_pages(data, filename)
+    units = [(n, _clean(t)) for n, t in pages]
+    units = [(n, t) for n, t in units if t]
+    if not units:
+        if kind == "page":
+            raise ValueError(
+                "No readable text found. This looks like a scanned PDF — "
+                "it would need OCR first."
             )
+        raise ValueError("No readable text found in this file.")
+    return LiteFile(filename=filename, kind=kind, units=units)
 
-        self.units = units
-        self.kind = kind
-        self.filename = filename
-        return len(units)
+
+def _too_large(total: int) -> TooLarge:
+    return TooLarge(
+        f"Together these documents have about {total // 2000:,} pages of text, more than "
+        f"AskDoc Lite reads at once (about {max_chars() // 2000:,}). Remove a document, or "
+        "use AskDoc's retrieval version, which is built for large libraries."
+    )
+
+
+@dataclass
+class LiteLibrary:
+    """A visitor's documents, read together for every question."""
+
+    files: list[LiteFile] = field(default_factory=list)
+
+    @property
+    def ready(self) -> bool:
+        return bool(self.files)
+
+    @property
+    def chars(self) -> int:
+        return sum(f.chars for f in self.files)
+
+    def summary(self) -> list[dict]:
+        return [f.summary() for f in self.files]
+
+    def add(self, new: LiteFile) -> None:
+        """Add a file, replacing one with the same name. All checks run before
+        anything changes, so a refused file leaves the library as it was."""
+        kept = [f for f in self.files if f.filename != new.filename]
+        if len(kept) >= max_files():
+            raise TooMany(
+                f"You can load up to {max_files()} documents at a time. "
+                "Remove one to add another."
+            )
+        files = kept + [new]
+        total = sum(f.chars for f in files)
+        if total > max_chars():
+            raise _too_large(total)
+        self.files = files
+
+    def remove(self, filename: str) -> bool:
+        before = len(self.files)
+        self.files = [f for f in self.files if f.filename != filename]
+        return len(self.files) < before
+
+    def replace_all(self, files: list[LiteFile]) -> None:
+        total = sum(f.chars for f in files)
+        if len(files) > max_files():
+            raise TooMany(f"You can load up to {max_files()} documents at a time.")
+        if total > max_chars():
+            raise _too_large(total)
+        self.files = list(files)
 
     def request(self, question: str) -> dict:
         """The Messages API request. Public so tests can check its shape directly."""
+        docs = []
+        for i, f in enumerate(self.files):
+            block = {
+                "type": "document",
+                "source": {
+                    "type": "content",
+                    # One block per page or part: each is one citable unit.
+                    "content": [{"type": "text", "text": t} for _, t in f.units],
+                },
+                "title": f.filename,
+                "citations": {"enabled": True},
+            }
+            if i == len(self.files) - 1:
+                # The cache covers everything up to and including this block, so
+                # one breakpoint on the last document caches the whole library.
+                block["cache_control"] = {"type": "ephemeral"}
+            docs.append(block)
         return {
             "model": model(),
             "max_tokens": int(os.getenv("LITE_MAX_TOKENS", "800")),
             "system": SYSTEM_PROMPT,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "document",
-                            "source": {
-                                "type": "content",
-                                # One block per page or part: each is one citable unit.
-                                "content": [{"type": "text", "text": t} for _, t in self.units],
-                            },
-                            "title": self.filename or "Document",
-                            "citations": {"enabled": True},
-                            # Same document for every question: cached after the first.
-                            "cache_control": {"type": "ephemeral"},
-                        },
-                        {"type": "text", "text": question},
-                    ],
-                }
-            ],
+            "messages": [{"role": "user", "content": docs + [{"type": "text", "text": question}]}],
         }
 
     def ask(self, question: str, client=None) -> dict:
-        """Answer from the whole document; sources come from Claude's citations."""
+        """Answer from the whole library; sources come from Claude's citations."""
         if not self.ready:
-            raise RuntimeError("No document loaded yet.")
+            raise RuntimeError("No documents loaded yet.")
         if client is None:
             from anthropic import Anthropic
 
@@ -134,7 +181,7 @@ class LiteDocument:
 
         parts: list[str] = []
         sources: list[dict] = []
-        seen: set[tuple[int, str]] = set()
+        seen: set[tuple[str, int, str]] = set()
         for block in resp.content:
             if getattr(block, "type", None) != "text":
                 continue
@@ -142,22 +189,27 @@ class LiteDocument:
             for c in getattr(block, "citations", None) or []:
                 if getattr(c, "type", None) != "content_block_location":
                     continue
-                idx = c.start_block_index
-                if not 0 <= idx < len(self.units):
+                d = getattr(c, "document_index", 0) or 0
+                if not 0 <= d < len(self.files):
                     continue
-                page = self.units[idx][0]
-                key = (page, c.cited_text.strip())
+                f = self.files[d]
+                idx = c.start_block_index
+                if not 0 <= idx < len(f.units):
+                    continue
+                page = f.units[idx][0]
+                text = c.cited_text.strip()
+                key = (f.filename, page, text)
                 if key in seen:
                     continue
                 seen.add(key)
-                sources.append({"page": page, "score": None, "text": c.cited_text.strip()})
+                sources.append({"file": f.filename, "page": page, "kind": f.kind, "score": None, "text": text})
 
         text = "".join(parts).strip() or NOT_FOUND
         usage = getattr(resp, "usage", None)
         return {
             "answer": text,
             "sources": sources[:6],
-            "kind": self.kind,
+            "kind": self.files[0].kind,
             "usage": {
                 "input": getattr(usage, "input_tokens", None),
                 "cache_read": getattr(usage, "cache_read_input_tokens", None),

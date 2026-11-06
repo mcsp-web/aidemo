@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ask Your Document Lite</title>
+<meta name="description" content="Ask questions of your documents and get answers that quote the exact passage and page." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #eef1f4;
+    --surface: #ffffff;
+    --ink: #141a1f;
+    --muted: #616b76;
+    --border: #dde3e8;
+    --accent: #0b7a6e;
+    --accent-weak: #e6f4f1;
+    --accent-ink: #0a5d54;
+    --danger: #b4483c;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,26,31,.04), 0 8px 24px rgba(20,26,31,.06);
+  }
+  /* Industry themes: only the accent changes, so every page reads as one product. */
+  body[data-pack="hoa"]    { --accent: #3d6b35; --accent-weak: #ecf3e8; --accent-ink: #2d5127; }
+  body[data-pack="dental"] { --accent: #2563a8; --accent-weak: #e8f0fa; --accent-ink: #1c4c82; }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-ink); }
+
+  /* ---- top bar + industry tabs ---- */
+  .top { max-width: 1080px; margin: 0 auto; padding: 22px 20px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .mark {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff;
+    display: grid; place-items: center; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 18px;
+  }
+  .brand h1 { font-family: "Space Grotesk", sans-serif; font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .brand h1 span { color: var(--accent); }
+  .brand p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 4px; overflow-x: auto; }
+  .tabs a {
+    text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 500;
+    padding: 7px 13px; border-radius: 8px; white-space: nowrap;
+  }
+  .tabs a:hover { color: var(--ink); }
+  .tabs a[aria-current="page"] { background: var(--accent); color: #fff; }
+
+  .wrap {
+    max-width: 1080px; margin: 0 auto; padding: 20px 20px 40px;
+    display: grid; grid-template-columns: 330px 1fr; gap: 24px;
+  }
+  .wrap > * { min-width: 0; }
+  @media (max-width: 820px) {
+    .wrap { grid-template-columns: minmax(0, 1fr); }
+    .chat { min-height: 480px; }
+  }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 16px; }
+  .card h2 { font-family: "Space Grotesk", sans-serif; font-size: 14px; margin: 0 0 4px; font-weight: 600; display: flex; justify-content: space-between; }
+  .card h2 small { font-family: "Inter", sans-serif; font-weight: 500; color: var(--muted); font-size: 12px; }
+  .card .hint { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+
+  /* ---- sample pack ---- */
+  .sample { background: var(--accent-weak); border-radius: 11px; padding: 12px 13px; margin-bottom: 12px; }
+  .sample .what { font-size: 13px; font-weight: 600; color: var(--accent-ink); }
+  .sample .files { font-size: 12px; color: var(--muted); margin: 3px 0 10px; }
+  .sample .files a { color: var(--muted); }
+  .btn {
+    width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 9px;
+    padding: 10px 12px; font: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer;
+  }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+  /* ---- loaded documents ---- */
+  .docs { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .docs li { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border); border-radius: 9px; padding: 7px 8px 7px 10px; font-size: 12.5px; }
+  .docs .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+  .docs .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .docs .pg { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+  .docs button { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 5px; }
+  .docs button:hover { color: var(--danger); background: #fbeeec; }
+  .docs .busy { color: var(--muted); font-style: italic; }
+
+  .drop {
+    display: block; border: 1.5px dashed var(--border); border-radius: 11px; padding: 14px 12px;
+    text-align: center; cursor: pointer; transition: border-color .15s ease, background .15s ease;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-weak); }
+  .drop svg { color: var(--accent); vertical-align: -5px; margin-right: 6px; }
+  .drop .big { font-size: 13px; font-weight: 500; }
+  .drop .small { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .drop.full { opacity: .5; pointer-events: none; }
+  input[type=file] { display: none; }
+
+  .examples { display: flex; flex-direction: column; gap: 8px; }
+  .chip {
+    text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+    padding: 9px 11px; font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .chip:disabled { opacity: .5; cursor: not-allowed; }
+  .note { font-size: 11.5px; color: var(--muted); margin: 14px 2px 0; }
+
+  /* ---- chat ---- */
+  .chat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 600px; }
+  .transcript { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 18px; }
+  .empty { margin: auto; text-align: center; max-width: 340px; color: var(--muted); }
+  .empty .big { font-family: "Space Grotesk", sans-serif; color: var(--ink); font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .empty p { font-size: 13px; margin: 0; }
+  .sys { align-self: center; font-size: 12px; color: var(--muted); background: var(--bg); border-radius: 20px; padding: 4px 12px; }
+
+  .msg { max-width: 90%; }
+  .msg.user { align-self: flex-end; }
+  .msg.user .body { background: var(--accent); color: #fff; border-radius: 13px 13px 3px 13px; padding: 10px 14px; font-size: 14px; }
+  .msg.bot { align-self: flex-start; width: 100%; }
+  .msg.bot .body {
+    background: #f5f7f9; border: 1px solid var(--border); border-radius: 13px 13px 13px 3px;
+    padding: 12px 15px; font-size: 14px; white-space: pre-wrap; animation: rise .25s ease;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .src-toggle { font-size: 11.5px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; margin-top: 9px; font-family: inherit; white-space: normal; }
+  .src-toggle:hover { color: var(--accent-ink); }
+  .src-row { display: none; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .src-row.show { display: flex; }
+  .src { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; font-size: 11.5px; color: var(--ink); padding: 4px 9px; cursor: pointer; font-family: inherit; }
+  .src:hover, .src.on { border-color: var(--accent); }
+  .src-body { display: none; margin-top: 8px; padding: 11px 13px; background: var(--accent-weak); border-radius: 9px; font-size: 12.5px; color: #234; line-height: 1.5; white-space: normal; }
+  .src-body.show { display: block; }
+  .src-body .where { color: var(--accent-ink); font-weight: 600; font-size: 11px; display: block; margin-bottom: 4px; }
+
+  .thinking { display: inline-flex; gap: 4px; align-items: center; }
+  .thinking span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .thinking span:nth-child(2) { animation-delay: .2s; }
+  .thinking span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+
+  .composer { border-top: 1px solid var(--border); padding: 14px; display: flex; gap: 10px; }
+  .composer input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); }
+  .composer input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+  .composer input:disabled { opacity: .6; }
+  .send { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 18px; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .send:disabled { opacity: .5; cursor: not-allowed; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--danger); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow); display: none; max-width: calc(100% - 32px); }
+  .toast.show { display: block; }
+</style>
+</head>
+<body data-pack="general">
+<header class="top">
+  <div class="brand">
+    <div class="mark">A</div>
+    <div>
+      <h1>Ask Your Document <span>Lite</span></h1>
+      <p id="tagline"></p>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Industry">
+    <a href="/" data-tab="general">Any business</a>
+    <a href="/hoa" data-tab="hoa">HOA</a>
+    <a href="/dental" data-tab="dental">Dental office</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="card">
+      <h2>Documents <small id="count"></small></h2>
+      <p class="hint" id="docsHint"></p>
+
+      <div class="sample">
+        <div class="what" id="sampleWhat"></div>
+        <div class="files" id="sampleFiles"></div>
+        <button class="btn" id="loadSamples">Load sample documents</button>
+      </div>
+
+      <ul class="docs" id="docs"></ul>
+
+      <label class="drop" id="drop">
+        <div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Add your own document</div>
+        <div class="small">PDF, Word, text or Markdown · up to 5 files</div>
+        <input type="file" id="file" accept=".pdf,.docx,.doc,.txt,.md" multiple />
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>Try asking</h2>
+      <p class="hint">Works with the sample documents; ask anything once yours are loaded.</p>
+      <div class="examples" id="examples"></div>
+    </div>
+
+    <p class="note">Sample documents are fictional. Your files are private to your browser session and are deleted after an hour without use.</p>
+  </aside>
+
+  <main class="chat">
+    <div class="transcript" id="transcript">
+      <div class="empty" id="empty">
+        <div class="big" id="emptyTitle"></div>
+        <p>Every answer is drawn only from the documents loaded, and quotes the exact passage, file and page so you can check it.</p>
+      </div>
+    </div>
+    <div class="composer">
+      <input id="q" type="text" placeholder="Load documents first…" disabled />
+      <button class="send" id="send" disabled>Ask</button>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="alert"></div>
+
+<script>
+  // One page, three industries. The address picks the industry; only words,
+  // starter questions, sample documents and the accent colour change.
+  const PACKS = {
+    general: {
+      tagline: "Your handbooks, SOPs and policies, answered with the exact quote",
+      hint: "Load the sample company documents, or add your own.",
+      what: "Harbor Logistics (fictional): employee handbook and operations SOPs",
+      files: ["Harbor-Logistics-Employee-Handbook-2026.pdf", "Harbor-Logistics-Operations-SOPs.pdf"],
+      empty: "Ask your company's documents",
+      questions: [
+        "How many unused PTO days carry over, and when do they expire?",
+        "Who has to approve a $3,000 purchase?",
+        "What do we do if the order system goes down?",
+        "Can I expense a $40 dinner with a glass of wine while travelling?",
+      ],
+    },
+    hoa: {
+      tagline: "Your CC&Rs, bylaws and rules, answered for the board, managers and residents",
+      hint: "Load the sample HOA documents, or add your association's own.",
+      what: "Palm Hollow HOA (fictional): CC&Rs, bylaws, rules and 2026 fees",
+      files: ["Palm-Hollow-HOA-Bylaws.pdf", "Palm-Hollow-HOA-Declaration-CCRs.pdf", "Palm-Hollow-HOA-Rules-and-Fees-2026.pdf"],
+      empty: "Ask your association's documents",
+      questions: [
+        "Can I put up a wood fence, and what does it cost to apply?",
+        "How long can I keep a boat in my driveway?",
+        "How much notice do owners get before a board meeting?",
+        "Can I rent my home on Airbnb?",
+      ],
+    },
+    dental: {
+      tagline: "Front-desk answers from your office manual and insurance plans",
+      hint: "Load the sample dental office documents, or add your practice's own.",
+      what: "Brightside Family Dental (fictional): office manual, PPO and HMO plan summaries, sterilization SOP",
+      files: ["Brightside-Dental-Coastal-Shield-PPO-Summary.pdf", "Brightside-Dental-Office-Manual.pdf", "Brightside-Dental-Sterilization-SOP.pdf", "Brightside-Dental-SunState-HMO-Summary.pdf"],
+      empty: "Ask your office's documents",
+      questions: [
+        "Does the PPO cover a third cleaning this year?",
+        "A patient has missed two appointments this year. What do we charge?",
+        "What does an HMO member pay for a crown?",
+        "How often is the autoclave spore-tested?",
+      ],
+    },
+  };
+  const PATH_PACK = { "/": "general", "/hoa": "hoa", "/dental": "dental" };
+  const packName = PATH_PACK[location.pathname.replace(/\/+$/, "") || "/"] || "general";
+  const pack = PACKS[packName];
+  const MAX_FILES = 5;
+  const ALLOWED_EXTS = [".pdf", ".docx", ".doc", ".txt", ".md"];
+
+  const $ = id => document.getElementById(id);
+  const transcript = $("transcript"), q = $("q"), send = $("send"), examples = $("examples");
+  const docsEl = $("docs"), drop = $("drop"), fileInput = $("file"), loadBtn = $("loadSamples");
+  let documents = [];
+  let busy = false;
+
+  // ---- page set-up ----
+  document.body.dataset.pack = packName;
+  document.querySelector(`.tabs a[data-tab="${packName}"]`).setAttribute("aria-current", "page");
+  $("tagline").textContent = pack.tagline;
+  $("docsHint").textContent = pack.hint;
+  $("sampleWhat").textContent = pack.what;
+  $("emptyTitle").textContent = pack.empty;
+  pack.files.forEach((f, i) => {
+    const a = document.createElement("a");
+    a.href = `/static/samples/${packName}/${f}`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = shortName(f);
+    if (i) $("sampleFiles").append(" · ");
+    $("sampleFiles").append(a);
+  });
+  $("sampleFiles").append(" (open to read)");
+  pack.questions.forEach(text => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = text;
+    b.disabled = true;
+    examples.appendChild(b);
+  });
+
+  function shortName(f) {
+    return f.replace(/\.(pdf|docx?|txt|md)$/i, "").replace(/[-_]+/g, " ");
+  }
+
+  function showToast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => t.classList.remove("show"), 5000);
+  }
+
+  function note(text) {
+    $("empty")?.remove();
+    const el = document.createElement("div");
+    el.className = "sys";
+    el.textContent = text;
+    transcript.appendChild(el);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+
+  // ---- library ----
+  function render(state) {
+    documents = state.documents || [];
+    docsEl.innerHTML = "";
+    documents.forEach(d => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="dot"></span><span class="nm"></span><span class="pg"></span><button type="button" aria-label="Remove">×</button>`;
+      li.querySelector(".nm").textContent = shortName(d.filename);
+      li.querySelector(".nm").title = d.filename;
+      const unit = d.kind === "part" ? "part" : "page";
+      li.querySelector(".pg").textContent = `${d.chunks} ${unit}${d.chunks === 1 ? "" : "s"}`;
+      li.querySelector("button").addEventListener("click", () => removeDoc(d.filename));
+      docsEl.appendChild(li);
+    });
+    $("count").textContent = documents.length ? `${documents.length} of ${MAX_FILES}` : "";
+    drop.classList.toggle("full", documents.length >= MAX_FILES);
+    setReady(documents.length > 0);
+  }
+
+  function setReady(on) {
+    const enabled = on && !busy;
+    q.disabled = !enabled;
+    send.disabled = !enabled;
+    q.placeholder = on ? "Ask a question about your documents…" : "Load documents first…";
+    examples.querySelectorAll(".chip").forEach(c => c.disabled = !enabled);
+    loadBtn.disabled = busy;
+  }
+
+  async function call(url, options) {
+    const res = await fetch(url, options);
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok) throw new Error(data.detail || "Something went wrong. Please try again.");
+    return data;
+  }
+
+  // A refresh keeps the visitor's documents (the server holds them for an hour).
+  call("/health").then(h => {
+    render(h);
+    if (h.ready) note("Your documents are still loaded.");
+  }).catch(() => render({ documents: [] }));
+
+  loadBtn.addEventListener("click", async () => {
+    busy = true; setReady(false);
+    loadBtn.textContent = "Loading…";
+    try {
+      const state = await call(`/samples/${packName}`, { method: "POST" });
+      render(state);
+      note(`Loaded ${state.documents.length} sample documents. Try a question.`);
+      q.focus();
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      busy = false;
+      loadBtn.textContent = "Load sample documents";
+      setReady(documents.length > 0);
+    }
+  });
+
+  drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); uploadAll(e.dataTransfer.files); });
+  fileInput.addEventListener("change", () => { uploadAll(fileInput.files); fileInput.value = ""; });
+
+  async function uploadAll(fileList) {
+    for (const file of Array.from(fileList)) {
+      if (!(await upload(file))) break;
+    }
+  }
+
+  async function upload(file) {
+    const name = file.name.toLowerCase();
+    if (!ALLOWED_EXTS.some(ext => name.endsWith(ext))) {
+      showToast("Please choose a PDF, Word, text, or Markdown file.");
+      return false;
+    }
+    if (documents.length >= MAX_FILES && !documents.some(d => d.filename === file.name)) {
+      showToast(`You can load up to ${MAX_FILES} documents. Remove one to add another.`);
+      return false;
+    }
+    busy = true; setReady(false);
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="dot"></span><span class="nm busy"></span>`;
+    li.querySelector(".nm").textContent = `Reading ${file.name}…`;
+    docsEl.appendChild(li);
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const state = await call("/upload", { method: "POST", body: form });
+      busy = false;
+      render(state);
+      note(`Added ${file.name}.`);
+      return true;
+    } catch (err) {
+      busy = false;
+      li.remove();
+      setReady(documents.length > 0);
+      showToast(err.message);
+      return false;
+    }
+  }
+
+  async function removeDoc(filename) {
+    try {
+      render(await call("/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      }));
+      note(`Removed ${filename}.`);
+    } catch (err) {
+      showToast(err.message);
+    }
+  }
+
+  // ---- ask ----
+  examples.addEventListener("click", e => {
+    if (e.target.classList.contains("chip") && !e.target.disabled) { q.value = e.target.textContent; ask(); }
+  });
+  send.addEventListener("click", ask);
+  q.addEventListener("keydown", e => { if (e.key === "Enter") ask(); });
+
+  function bubble(cls, html) {
+    $("empty")?.remove();
+    const el = document.createElement("div");
+    el.className = `msg ${cls}`;
+    el.innerHTML = `<div class="body">${html}</div>`;
+    transcript.appendChild(el);
+    transcript.scrollTop = transcript.scrollHeight;
+    return el.querySelector(".body");
+  }
+
+  function where(s) {
+    const unit = s.kind === "part" ? "Part" : "Page";
+    return { short: `${shortName(s.file || "")} · ${unit.toLowerCase().slice(0, 1)}. ${s.page}`, long: `${shortName(s.file || "")} · ${unit} ${s.page} · quoted` };
+  }
+
+  function renderSources(sources) {
+    const box = document.createElement("div");
+    const toggle = document.createElement("button");
+    toggle.className = "src-toggle";
+    toggle.textContent = `Sources · ${sources.length} quoted passage${sources.length > 1 ? "s" : ""}`;
+    const row = document.createElement("div");
+    row.className = "src-row";
+    const bodies = document.createElement("div");
+    sources.forEach(s => {
+      const w = where(s);
+      const chip = document.createElement("button");
+      chip.className = "src";
+      chip.textContent = w.short;
+      const body = document.createElement("div");
+      body.className = "src-body";
+      const label = document.createElement("span");
+      label.className = "where";
+      label.textContent = w.long;
+      body.append(label, document.createTextNode(s.text));
+      chip.addEventListener("click", () => { body.classList.toggle("show"); chip.classList.toggle("on"); });
+      row.appendChild(chip);
+      bodies.appendChild(body);
+    });
+    toggle.addEventListener("click", () => {
+      const open = row.classList.toggle("show");
+      if (!open) bodies.querySelectorAll(".src-body").forEach(b => b.classList.remove("show"));
+    });
+    box.append(toggle, row, bodies);
+    return box;
+  }
+
+  async function ask() {
+    const question = q.value.trim();
+    if (!question || !documents.length || busy) return;
+    bubble("user", "").textContent = question;
+    q.value = "";
+    busy = true; setReady(false);
+    const body = bubble("bot", `<div class="thinking"><span></span><span></span><span></span></div>`);
+    // On a phone the chat sits below the documents: bring it into view.
+    if (matchMedia("(max-width: 820px)").matches) document.querySelector(".chat").scrollIntoView({ behavior: "smooth", block: "start" });
+    try {
+      const data = await call("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      body.textContent = data.answer;
+      if (data.sources && data.sources.length) body.appendChild(renderSources(data.sources));
+    } catch (err) {
+      body.textContent = "⚠️ " + err.message;
+      if (/Upload a document first/.test(err.message)) render({ documents: [] });
+    } finally {
+      busy = false;
+      setReady(documents.length > 0);
+      q.focus();
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+  }
+</script>
+</body>
+</html>
