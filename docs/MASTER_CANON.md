@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
 **Last Updated:** November 4, 2026 (session 4)
-**Current Version:** v0.9.0
+**Current Version:** v0.9.1
 **Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). v0.9.0 adds up to 5 documents per visitor and industry pages `/hoa` and `/dental` with sample packs (D-7) — pushed, needs a Redeploy and a smoke test. **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
@@ -82,7 +82,7 @@ GET  /                                                 -> index.html
 | `LITE_VISITOR_QUESTIONS` / `LITE_VISITOR_WINDOW_SECONDS` | `15` / `600` | Lite: questions per visitor (Cloudflare client IP) per window |
 | `LITE_MAX_CHARS` | `400000` | Lite: most text a visitor's library may hold, all files together (~100k tokens, ~200 pages) |
 | `LITE_MAX_FILES` | `5` | Lite: most documents in one visitor's library |
-| `LITE_MAX_TOKENS` | `800` | Lite: answer length cap |
+| `LITE_MAX_TOKENS` | `1024` | Lite: answer length cap (800 until v0.9.1); a capped answer is trimmed to its last full sentence with a "shortened" note |
 | `LITE_DOC_TTL_SECONDS` | `3600` | Lite: a visitor's document is dropped after this long unused (also the cookie lifetime) |
 | `LITE_MAX_DOCS` | `40` | Lite: most visitor libraries held at once; the least recently used is dropped first (40 × ~200 pages ≈ tens of MB) |
 
@@ -255,6 +255,13 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Verified:** `test_lite.py` ALL LITE CHECKS PASSED (29 checks, incl. two-file citations, replace by name, limits that leave the library untouched, remove, the three packs, page routes, sample PDFs served, isolation incl. remove by a stranger); `test_pipeline.py` and `test_api.py` pass. Browser run against a fake API: each tab loads its pack, answers cite file + page, refresh keeps the library, remove works, phone width 390 px with no overflow.
 - **Outcome:** committed and pushed; goes live on a manual Redeploy after `build-lite` is green. Live smoke test is OPEN-15.
 
+### [v0.9.1] — Nov 6, 2026 — Starter questions follow the loaded documents; no more cut-off answers
+**Summary:** James's first look at v0.9.0 (live, redeployed manually): he loaded the HOA samples, switched to the Any business tab, and the starter questions (handbook ones) didn't match the HOA documents still loaded. One long answer also stopped mid-sentence at the 800-token cap.
+- **Starter questions (`lite.html`):** chosen from what is loaded, not from the tab: a loaded sample pack → that pack's questions; on another industry's tab the card says so and offers "Load the <tab> sample documents instead"; own files → four questions that work on any document; nothing loaded → the tab's questions. All 12 pack questions were re-checked against their own documents.
+- **Answer length (`lite.py`):** prompt asks for about 150 words unless detail is requested; `LITE_MAX_TOKENS` default 800 → 1024; when `stop_reason` is `max_tokens` the answer is trimmed to its last full sentence and ends "(Answer shortened. Ask a narrower question for more detail.)".
+- **Verified:** all three test scripts pass (new check: a capped answer ends cleanly); browser run reproducing HOA-then-Any-business, the switch button, and own-file questions; no console errors.
+- **Outcome:** committed and pushed; live after a manual Redeploy once `build-lite` is green.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -302,4 +309,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.9.0*
+*End of MASTER CANON — AskDoc v0.9.1*
