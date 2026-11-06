@@ -109,6 +109,8 @@
   }
   .chip:hover { border-color: var(--accent); color: var(--accent-ink); }
   .chip:disabled { opacity: .5; cursor: not-allowed; }
+  .switch { margin-top: 10px; width: 100%; background: none; border: 1px solid var(--accent); color: var(--accent-ink); border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .switch:hover { background: var(--accent-weak); }
   .note { font-size: 11.5px; color: var(--muted); margin: 14px 2px 0; }
 
   /* ---- chat ---- */
@@ -195,8 +197,9 @@
 
     <div class="card">
       <h2>Try asking</h2>
-      <p class="hint">Works with the sample documents; ask anything once yours are loaded.</p>
+      <p class="hint" id="askHint"></p>
       <div class="examples" id="examples"></div>
+      <button class="switch" id="askSwitch" hidden></button>
     </div>
 
     <p class="note">Sample documents are fictional. Your files are private to your browser session and are deleted after an hour without use.</p>
@@ -262,6 +265,14 @@
       ],
     },
   };
+  const LABEL = { general: "Any business", hoa: "HOA", dental: "Dental office" };
+  // For a visitor's own files: questions that work on almost any document.
+  const OWN_QUESTIONS = [
+    "What is this document about?",
+    "Summarize the key points.",
+    "What deadlines, dates or fees does it mention?",
+    "Who is responsible for what?",
+  ];
   const PATH_PACK = { "/": "general", "/hoa": "hoa", "/dental": "dental" };
   const packName = PATH_PACK[location.pathname.replace(/\/+$/, "") || "/"] || "general";
   const pack = PACKS[packName];
@@ -291,13 +302,43 @@
     $("sampleFiles").append(a);
   });
   $("sampleFiles").append(" (open to read)");
-  pack.questions.forEach(text => {
-    const b = document.createElement("button");
-    b.className = "chip";
-    b.textContent = text;
-    b.disabled = true;
-    examples.appendChild(b);
-  });
+  // Starter questions follow what is loaded, not the tab: documents stay loaded
+  // when the visitor switches industry, and HOA questions make no sense against
+  // a dental manual.
+  function loadedPack() {
+    const names = new Set(documents.map(d => d.filename));
+    return Object.keys(PACKS).find(k => PACKS[k].files.every(f => names.has(f))) || null;
+  }
+
+  function renderQuestions() {
+    const match = loadedPack();
+    let list = pack.questions;
+    let hint = "Load the sample documents, then try one of these.";
+    let other = false;
+    if (documents.length && match) {
+      list = PACKS[match].questions;
+      other = match !== packName;
+      hint = other
+        ? `These match the ${LABEL[match]} sample documents you have loaded.`
+        : "Answered from the sample documents. Or ask your own question.";
+    } else if (documents.length) {
+      list = OWN_QUESTIONS;
+      hint = "Questions that work on most documents. Ask anything specific too.";
+    }
+    $("askHint").textContent = hint;
+    examples.innerHTML = "";
+    list.forEach(text => {
+      const b = document.createElement("button");
+      b.className = "chip";
+      b.textContent = text;
+      examples.appendChild(b);
+    });
+    const sw = $("askSwitch");
+    sw.hidden = !other;
+    sw.textContent = `Load the ${LABEL[packName]} sample documents instead`;
+  }
+  $("askSwitch").addEventListener("click", () => loadBtn.click());
+  renderQuestions();
 
   function shortName(f) {
     return f.replace(/\.(pdf|docx?|txt|md)$/i, "").replace(/[-_]+/g, " ");
@@ -336,6 +377,7 @@
     });
     $("count").textContent = documents.length ? `${documents.length} of ${MAX_FILES}` : "";
     drop.classList.toggle("full", documents.length >= MAX_FILES);
+    renderQuestions();
     setReady(documents.length > 0);
   }
 
