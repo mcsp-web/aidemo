@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.9.1 · Nov 6, 2026**
+**Derived from `MASTER_CANON.md` v0.10.0 · Nov 8, 2026**
 **Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); v0.9.0 adds up to 5 documents and the `/hoa`, `/dental` and `/` pages with sample packs (D-7), pushed, needs a Redeploy + smoke test. **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
@@ -48,6 +48,22 @@
 | APP-20 | Fictional sample packs (HOA, dental, any business) loadable in one click, readable as PDFs | v0.9.0 |
 | APP-21 | Starter questions follow the loaded documents (switch offer on another tab; generic questions for own files) | v0.9.1 |
 | APP-22 | Answers capped at ~150 words by prompt, 1024 tokens; a capped answer ends on a full sentence with a note | v0.9.1 |
+
+---
+
+## ⏳ NEXT (AskDoc Client Edition — the product behind Upwork Gig C; D-8, plan in canon v0.10.0)
+
+| ID | Item | Owner |
+|---|---|---|
+| CLIENT-01 | `app/main_client.py` skeleton + SQLite schema on `/data` + `/health` | CLI |
+| CLIENT-02 | Passwordless sign-in (Resend), roles admin/staff, invite and remove staff | CLI |
+| CLIENT-03 | Documents persist on the volume; admin page to add, replace, remove; `LITE_MAX_FILES` raised for clients, ~200-page cap kept | CLI |
+| CLIENT-04 | Usage log with cost per question, month totals, CSV; monthly dollar cap with admin email | CLI |
+| CLIENT-05 | `client.html`: staff chat + admin tabs (Files, Staff, Usage, Settings), client name and colour | CLI |
+| CLIENT-06 | `docker-compose.client.yml`, README deploy recipe, `DEMO_MODE` (admin-view button, nightly reset, low cap) | CLI |
+| CLIENT-07 | **Resend sending address; demo Anthropic key with spend limit; `askdoc` subdomain + Coolify resource** | **James** |
+| CLIENT-08 | Deploy the sales demo at `askdoc.mcspconsulting.com` (D-9); screenshots for the Gig C gallery | James + CLI |
+| LIB-01 | Library edition (D-10): revive RAG locally, document sets, swappable embeddings (local or API), shared accounts/usage/cap | CLI |
 
 ---
 

@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
-**Last Updated:** November 4, 2026 (session 4)
-**Current Version:** v0.9.1
+**Last Updated:** November 8, 2026 (session 5)
+**Current Version:** v0.10.0
 **Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). v0.9.0 adds up to 5 documents per visitor and industry pages `/hoa` and `/dental` with sample packs (D-7) — pushed, needs a Redeploy and a smoke test. **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
@@ -262,6 +262,24 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Verified:** all three test scripts pass (new check: a capped answer ends cleanly); browser run reproducing HOA-then-Any-business, the switch button, and own-file questions; no console errors.
 - **Outcome:** committed and pushed; live after a manual Redeploy once `build-lite` is green.
 
+### [v0.10.0] — Nov 8, 2026 — Plan: AskDoc Client Edition and the Library edition (recon only, no code)
+**Summary:** Upwork Gig C ("AI document assistant with citations", approved Nov 7) sells Lite $500 (up to 50 pages, citations, hosted), Business $1,200 (up to 200 pages, staff logins, usage log, monthly cost cap) and Library $2,500 (1,000+ pages, retrieval search, several document sets, admin to manage files). James (Nov 7-8): build these as finished, ready-to-deploy products so a client order is a deployment, not a build from scratch; build the Library (RAG) edition now too, developed on his 32 GB laptop. Read-only recon of `main` at `56b5053`; `test_lite.py` passes (ALL LITE CHECKS PASSED).
+- **Reusable unchanged:** `extract.py`; `lite.py` `read_file`, `LiteFile`, `LiteLibrary` (`add`/`remove`/`replace_all` check limits before changing anything, lite.py:120-160), the request builder with citations and caching, and the per-answer token `usage` dict (lite.py:222-231), which is exactly what a usage log needs.
+- **Demo-only, to be replaced in the Client Edition:** `DocumentStore` (main_lite.py:59-98, in memory, 1 h expiry); the anonymous `askdoc_session` cookie (main_lite.py:101-115); `Guard` (main_lite.py:128-157, daily question count, not dollars); usage only written to the log (main_lite.py:248).
+- **Limits:** `LITE_MAX_CHARS` 400,000 at ~2,000 characters a page (lite.py:52-54, 105-110) = about 200 pages per library: the Business promise. `LITE_MAX_FILES` (5) is a demo limit; the Client Edition raises it (e.g. 50) and keeps the page cap.
+- **Structure (D-8):** a third entry point `app/main_client.py` + `app/static/client.html`, served by the existing `aidemo-lite` image with a different start command, so no new image or CI workflow. The public demo (`main_lite.py`, `lite.html`) stays as it is.
+- **Dependencies:** none heavy. SQLite from the standard library; Resend called over `httpx` (already installed with `anthropic`); sign-in tokens and sessions stored hashed in SQLite (no new package).
+- **Commit plan (each with tests in a new `test_client.py`, fake-API style like `test_lite.py`):**
+  1. `main_client.py` skeleton + SQLite schema on `/data` (users, sign-in tokens, sessions, documents, questions, settings) + `/health`.
+  2. Passwordless sign-in by emailed link (Resend), roles admin and staff, admin invites and removes staff.
+  3. Documents that persist: originals and extracted text on the volume, library rebuilt at start; admin page to add, replace and remove.
+  4. Usage log (who, when, tokens, estimated cost from a price table by model) with month totals and CSV; monthly dollar cap set by the admin: at the cap answers pause with a clear message and the admin is emailed once; resets on the 1st.
+  5. `client.html`: staff chat (sources by file and page) and admin tabs Files, Staff, Usage, Settings; client name and colour from env.
+  6. `docker-compose.client.yml` + README recipe (one Coolify resource, volume and subdomain per client) + `DEMO_MODE` for the sales demo: a "See the admin view" button, nightly reset to the Harbor Logistics sample pack, low cap.
+- **Library edition (D-10), after the Client Edition:** revive the RAG engine locally; several document sets; embeddings behind one switch (local sentence-transformers or an embedding API), so small client servers can run Library without torch; accounts, usage and cap shared with the Client Edition.
+- **Needs James (BOLD):** **the Resend sending address for sign-in emails; a separate Anthropic workspace key with its own spend limit for the demo; the `askdoc` subdomain in Cloudflare and its Coolify resource when we deploy.**
+- **Outcome:** docs only; no code changed.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -273,6 +291,9 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **D-5 — Two editions; Lite takes the public domain (Nov 4, 2026).** AskDoc Lite lives in this repo (shares UI, extraction and tests) as a second image, and takes over `aidemo.mcspconsulting.com`, the URL already linked from the MCSP site and the Fiverr gig. AskDoc RAG is presented as the "big brother" for large document libraries and heavy use; it returns on its own subdomain (e.g. `rag.mcspconsulting.com`) when it has its own server. Client hosting default: MCSP builds and runs a new dedicated server for the client and charges for maintaining it; building on the client's own VPS/server is offered as an option, never assumed.
 - **D-6 — Lite keeps one document per visitor (Nov 4, 2026).** Supersedes D-4 for Lite: on a public demo a shared document would let one prospect read another's upload. Session cookie + in-memory store with expiry and an LRU cap; no database, still one small container. RAG keeps D-4 until it is revived (APP-05).
 - **D-7 — Lite has its own page and multi-document libraries (Nov 6, 2026).** The Lite UI (industry tabs, sample packs, a file list) no longer matches RAG's, so `lite.html` replaces the shared `index.html` for Lite; extraction and tests stay shared. A visitor may hold up to 5 files read together, because real buyers' questions span documents (CC&Rs + fee schedule, office manual + insurance plan). Industry pages share one codebase; only words, questions, samples and the accent colour differ.
+- **D-8 — AskDoc Client Edition (Nov 8, 2026).** The product behind Gig C's Business tier: the Lite engine plus accounts (passwordless email sign-in, admin and staff), documents that persist, a usage log and a monthly dollar cap. One deployment per client (own Coolify resource, subdomain, volume and SQLite file): isolation by container, no multi-tenancy. Separate entry point `app/main_client.py` in the same `aidemo-lite` image; the public demo is untouched.
+- **D-9 — Domains (Nov 7, 2026).** `aidemo.mcspconsulting.com` stays the public anonymous Lite demo. `askdoc.mcspconsulting.com` is the Client Edition sales demo (fictional Harbor Logistics, "See the admin view", nightly reset, low cap). `rag.mcspconsulting.com` is the Library demo once it has a server. Real clients: `ask.<their-domain>` pointed at us, or `<client>.askdoc.mcspconsulting.com`.
+- **D-10 — Library edition built ahead of orders (Nov 8, 2026).** RAG is revived and developed on James's 32 GB laptop; production needs its own server later (the RAG image overloaded the shared VPS in October). The embedding layer is swappable by one setting: local model (documents never leave our server; bigger server, higher price) or an embedding API (small server, pennies per library).
 
 ---
 
@@ -309,4 +330,4 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **mcspconsulting AI service page** — build brief written; awaiting its recon report. Its "see a live demo" link is gated on one config value and turns on once **OPEN-3** confirms the URL is live.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
 
-*End of MASTER CANON — AskDoc v0.9.1*
+*End of MASTER CANON — AskDoc v0.10.0*
