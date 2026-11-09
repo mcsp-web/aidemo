@@ -1,6 +1,6 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.10.0 · Nov 8, 2026**
-**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); v0.9.0 adds up to 5 documents and the `/hoa`, `/dental` and `/` pages with sample packs (D-7), pushed, needs a Redeploy + smoke test. **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
+**Derived from `MASTER_CANON.md` v0.10.1 · Nov 8, 2026**
+**Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); up to 5 documents and the `/`, `/hoa`, `/dental` pages with sample packs (D-7) live since Nov 6 (v0.9.0); v0.9.1 built, Redeploy + smoke test pending (OPEN-15). Next build: the Client Edition (D-8). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
 > `INFRA-*` infrastructure/deploy · `APP-*` application · `HARDEN-*` production hardening · `GTM-*` go-to-market.
@@ -71,7 +71,7 @@
 
 | ID | Item | Owner | Canon ref |
 |---|---|---|---|
-| INFRA-20 | Redeploy for v0.9.1 after `build-lite` is green, then smoke-test the three pages (v0.9.0 is live; first look done) | **James** | OPEN-15 |
+| INFRA-20 | Redeploy v0.9.1 (image already green) if not done, then smoke-test the three pages and the tab switch (v0.9.0 live; first look done) | **James** | OPEN-15 |
 | INFRA-19 | Switch off Coolify auto-deploy on the Lite resource (a push deploys before CI publishes the image) | **James** | OPEN-13 |
 | APP-17 | Watch for repeated sentences in answers; capture raw blocks if it recurs | CLI | OPEN-14 |
 | INFRA-05 | RAG live smoke test (on revive, on its own subdomain) | **James** | OPEN-3 |
@@ -88,8 +88,10 @@
 |---|---|---|
 | GTM-01 | Screenshot the live Lite demo for the Fiverr gallery (image 3, sources panel open) | Unblocked |
 | GTM-02 | Record the 30-second demo video (own voice + screen recording) | Script already drafted |
-| GTM-03 | Turn on the "see a live demo" link in the mcspconsulting AI service page (`AI_DEMO_URL`) | Unblocked |
-| GTM-05 | Switch on the AskDoc Lite live link in the portfolio admin | Unblocked |
+| GTM-03 | Demo link on the mcspconsulting AI page: **a decision first** — that site keeps the demo private by design (no `AI_DEMO_URL`; a test forbids the link). Public = decision + code change in the MCSP repo | Decision (James) |
+| GTM-05 | Portfolio: AskDoc Lite seeded; "Link it publicly" stays off while the demo is private | Follows GTM-03 |
+| GTM-06 | HOA test while the HOA platform is parked: offer the AskDoc HOA assistant to 10–20 Florida HOA boards or small management companies (about 1 h/week); January check ([HOA Platform Research](https://claude.ai/artifact/8g2y3qqoJhRuRpwHLikhzw)) | James |
+| GTM-07 | MCSP prospect finder: an AskDoc offer linking `/hoa` and `/dental` (propose-first in the MCSP repo) | Idea |
 | GTM-04 | Publish the Fiverr gig with the demo linked | After GTM-01/02 |
 
 ---
