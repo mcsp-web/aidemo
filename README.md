@@ -1,96 +1,72 @@
-# Ask Your Document — AI document Q&A demo
+# AskDoc: ask questions of your documents, get answers you can check
 
-A small, production-shaped RAG app: upload a PDF, ask questions, get answers
-grounded **only** in that document, with the source passages shown so answers
-are verifiable.
+Upload a PDF, Word, text or Markdown file and ask questions about it. Every answer
+quotes the exact passage and page it came from, and when the document doesn't
+cover something the app says so instead of guessing.
 
-**Stack:** FastAPI · local sentence-transformers embeddings · Claude (swappable to GPT) · one Docker container.
+**Live demo:** https://aidemo.mcspconsulting.com (also `/hoa` and `/dental` for industry versions)
 
----
+| Answers with page citations | "Not in this document" instead of a guess | Ready state |
+|---|---|---|
+| ![Answers quoting page and passage](docs/screenshots/01-answers.webp) | ![Refuses to answer outside the document](docs/screenshots/02-not-found.webp) | ![Document loaded, suggested questions](docs/screenshots/03-ready.webp) |
 
-## How it works
-
-1. **Upload** — the PDF's text is extracted and split into overlapping chunks.
-2. **Embed** — each chunk becomes a vector, using a small model that runs
-   locally (no cost, no second vendor).
-3. **Ask** — your question is embedded, the closest chunks are retrieved by
-   cosine similarity, and those passages + your question go to the LLM.
-4. **Answer** — the model replies using only those passages, and the app shows
-   which pages the answer came from.
-
-The only external API call in the whole app is the final answer step.
+Built by James McCalla ([MCSP Consulting](https://mcspconsulting.com)).
 
 ---
+
+## Two editions in one repo
+
+| | **AskDoc Lite** (live demo) | **AskDoc RAG** (shelved) |
+|---|---|---|
+| Entry point | `app/main_lite.py` + `app/static/lite.html` | `app/main.py` + `app/static/index.html` |
+| How it answers | Sends the whole document to Claude with built-in citations | Local sentence-transformers embeddings, top-k retrieval, then the LLM |
+| Limits | ~200 pages per set (`LITE_MAX_CHARS`), up to 5 files (`LITE_MAX_FILES`) | Bigger libraries |
+| Image | `Dockerfile.lite` (slim, no torch) | `Dockerfile` (~2 GB with torch) |
+
+Both share `app/extract.py` (PDF/DOCX/text extraction and validation).
+
+## Front end
+
+`app/static/lite.html` is a single dependency-free page (vanilla JS + CSS custom properties):
+
+- Drag-and-drop or tap-to-upload, multi-file, with per-file status and remove
+- Chat thread with **citation chips** (page number + quoted passage) under each answer
+- Suggested questions once a document is loaded; one-click sample documents
+- Industry themes (`/hoa`, `/dental`) that change only the accent tokens, so every page reads as one product
+- Clear error states: unsupported file, too many files, document too long, daily limit reached
+- Responsive layout that collapses to a single column under 820 px
+
+## Tests
+
+Three plain-Python suites, **47 checks**, each run in CI before its image is built:
+
+| Suite | Checks | Covers |
+|---|---|---|
+| `test_lite.py` | 30 | citation mapping to file + page, the not-found path, upload validation and limits, **visitor isolation** (a guessed cookie sees nothing), per-visitor and global daily caps, friendly errors with no stack traces |
+| `test_api.py` | 12 | HTTP contract of the RAG edition |
+| `test_pipeline.py` | 5 | chunking and retrieval plumbing |
+
+```bash
+pip install -r requirements-lite.txt reportlab httpx
+python test_lite.py && python test_api.py && python test_pipeline.py
+```
+
+The Claude call is stubbed, so the tests need no API key.
 
 ## Run it locally
 
 ```bash
-cp .env.example .env        # then paste your Anthropic key into .env
-cp docker-compose.override.yml.example docker-compose.override.yml
-docker compose up --build
+pip install -r requirements-lite.txt
+export ANTHROPIC_API_KEY=...        # never committed; see .env.example
+uvicorn app.main_lite:app --reload  # http://localhost:8000
 ```
 
-Open http://localhost:8000
+## Build and deploy
 
-The compose file uses `expose` rather than a published port, so Coolify's proxy
-can route to it by domain. That second copy is what republishes port 8000 on
-your own machine — it's git-ignored, so each clone needs it once.
+- GitHub Actions (`.github/workflows/build-lite.yml`) runs the tests, then builds and publishes the image to GHCR. Images are never built on a laptop or the server.
+- Production runs on a Hetzner VPS under Coolify; the server only pulls the finished image.
+- The API key lives only in the host's environment, with its own spending limit.
 
-**Local runs build from source for testing only. The deployed image is built and
-published by GitHub Actions — never run `docker compose push` from a laptop.**
+## Project docs
 
-> First build takes a few minutes — it downloads the embedding model once and
-> bakes it into the image. After that, startup is instant.
-
-Get a key at https://console.anthropic.com → Settings → API Keys. Demo usage
-costs a fraction of a cent per question on the default Haiku model.
-
----
-
-## Deploy to your VPS (Coolify)
-
-1. Push this folder to a Git repo.
-2. In Coolify: **New Resource → Docker Compose**, point it at the repo.
-3. Add an environment variable **`ANTHROPIC_API_KEY`** with your key.
-4. Before the first deploy, run `docker login ghcr.io -u <github-username>` on the
-   host and paste a token with `read:packages` scope when prompted, so the image
-   pull authenticates.
-5. Set a domain (e.g. `demo.yourdomain.com`) and deploy.
-
-That public URL is what goes in your Fiverr gallery.
-
----
-
-## Swapping the model or provider
-
-Everything is env-driven — no code changes:
-
-| Variable | Default | Notes |
-|---|---|---|
-| `LLM_PROVIDER` | `anthropic` | or `openai` |
-| `LLM_MODEL` | `claude-haiku-4-5-20251001` | e.g. `claude-sonnet-5` for higher quality, or `gpt-4o-mini` |
-| `ANTHROPIC_API_KEY` | — | required for Claude |
-| `OPENAI_API_KEY` | — | required only if using OpenAI |
-
-Being able to switch providers in one line is a genuine selling point — show it.
-
----
-
-## Tests (optional)
-
-`test_pipeline.py` and `test_api.py` verify the retrieval and HTTP layers using
-lightweight stubs (they need `reportlab`, a dev-only dependency). Run with:
-
-```bash
-pip install reportlab httpx
-python test_pipeline.py && python test_api.py
-```
-
----
-
-## Ideas for turning this into paid work
-
-- Per-user documents stored in a real vector database (Pinecone, pgvector, Qdrant)
-- Multiple documents at once / a document library
-- Show answer confidence and let users click through to the exact source page
-- Wrap it into an existing Laravel/Vue app instead of a standalone page
+`docs/MASTER_CANON.md` is the source of truth for decisions and history; `docs/ROADMAP.md` tracks what's next.
