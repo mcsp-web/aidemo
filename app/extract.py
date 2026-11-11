@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import io
 import re
+import zipfile
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -20,10 +21,18 @@ from pypdf import PdfReader
 # Target size of one synthesized unit, for formats that have no real pages.
 _PSEUDO_PAGE_CHARS = 3000
 
+# Limits checked BEFORE a file is parsed (canon OPEN-17 D), so a crafted file cannot exhaust
+# the container's memory: a PDF's page count, and a Word file's size once unzipped.
+MAX_PDF_PAGES = 1000
+MAX_DOCX_EXPANDED_BYTES = 50 * 1024 * 1024
+MAX_DOCX_ENTRIES = 2000
+
 
 def _extract_pdf(data: bytes) -> list[tuple[int, str]]:
     """Return a list of (page_number, page_text). Page numbers start at 1."""
     reader = PdfReader(io.BytesIO(data))
+    if len(reader.pages) > MAX_PDF_PAGES:
+        raise ValueError(f"This PDF has more than {MAX_PDF_PAGES:,} pages, which is more than this demo reads.")
     pages: list[tuple[int, str]] = []
     for i, page in enumerate(reader.pages, start=1):
         text = page.extract_text() or ""
@@ -65,6 +74,15 @@ def _extract_docx(data: bytes) -> list[tuple[int, str]]:
     # Imported lazily, like the provider SDKs in llm.py, so the rest of this
     # module still works when python-docx isn't installed.
     from docx import Document
+
+    # A .docx is a zip: check what it would unzip to before python-docx opens it.
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            entries = z.infolist()
+    except zipfile.BadZipFile:
+        raise ValueError("This Word file can't be read. Please save it again as .docx.")
+    if len(entries) > MAX_DOCX_ENTRIES or sum(e.file_size for e in entries) > MAX_DOCX_EXPANDED_BYTES:
+        raise ValueError("This Word file is too large to read once opened. Please save it as PDF or split it.")
 
     doc = Document(io.BytesIO(data))
     blocks: list[str] = [p.text for p in doc.paragraphs if p.text.strip()]
