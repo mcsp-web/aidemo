@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.10.1 · Nov 8, 2026**
+**Derived from `MASTER_CANON.md` v0.10.2 · Nov 11, 2026**
 **Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); up to 5 documents and the `/`, `/hoa`, `/dental` pages with sample packs (D-7) live since Nov 6 (v0.9.0); v0.9.1 built, Redeploy + smoke test pending (OPEN-15). Next build: the Client Edition (D-8). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
@@ -23,6 +23,7 @@
 | INFRA-03 | Coolify app via GitHub App source, Docker Compose build pack | v0.4.0 |
 | INFRA-04 | Domain bound, HTTP→HTTPS, `ANTHROPIC_API_KEY` set — app **Running** | v0.4.0 |
 | INFRA-07 | Repo `mcsp-web/aidemo` set **private** | v0.6.0 |
+| INFRA-21 | Repo made **public** (Nov 10) with a showcase README and screenshots; history scanned clean | v0.10.2 |
 | APP-09 | Multi-format ingestion — DOCX/TXT/MD alongside PDF; `kind`-aware "Page N" / "Part N" source labels | v0.6.0 |
 | APP-10 | Drop-zone border fix — `.drop` `display:block` (was a fragmented inline `<label>`) | v0.6.0 |
 | HARDEN-05 | `build()` made atomic — a failed upload no longer leaves a torn index | v0.6.0 |
@@ -73,6 +74,7 @@
 |---|---|---|---|
 | INFRA-20 | Redeploy v0.9.1 (image already green) if not done, then smoke-test the three pages and the tab switch (v0.9.0 live; first look done) | **James** | OPEN-15 |
 | INFRA-19 | Switch off Coolify auto-deploy on the Lite resource (a push deploys before CI publishes the image) | **James** | OPEN-13 |
+| GTM-10 | The demo is now public by link (README, GitHub profile, résumé): keep public (Lite key spend limit, portfolio "Link it publicly", MCSP AI page test) or remove the links | **James** | OPEN-16 |
 | APP-17 | Watch for repeated sentences in answers; capture raw blocks if it recurs | CLI | OPEN-14 |
 | INFRA-05 | RAG live smoke test (on revive, on its own subdomain) | **James** | OPEN-3 |
 | HARDEN-03 | Coolify reverse-proxy client-body-size ~25 MB (upload backstop) | **James** | OPEN-4 |

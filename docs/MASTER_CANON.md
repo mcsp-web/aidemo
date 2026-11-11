@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
-**Last Updated:** November 8, 2026 (session 5)
-**Current Version:** v0.10.1
+**Last Updated:** November 11, 2026 (session 6)
+**Current Version:** v0.10.2
 **Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). Up to 5 documents per visitor and industry pages `/`, `/hoa`, `/dental` with sample packs (D-7): v0.9.0 live since Nov 6 (first look done); v0.9.1 (questions follow loaded documents, no cut-off answers) built green Nov 6, its Redeploy and the full smoke test are OPEN-15. Next build: the Client Edition (D-8, plan v0.10.0). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
@@ -20,7 +20,7 @@
 - **AskDoc RAG** (`app/main.py` + `app/rag.py` + `app/llm.py`) — text is chunked and embedded locally, the closest chunks are retrieved by cosine similarity and sent to an LLM, which answers **from those passages only**. Built for large document libraries and heavy use. The "big brother" offer.
 **Run surface:** Lite at `https://aidemo.mcspconsulting.com` (from v0.8.0, D-5). RAG offline (shelved); on revive it gets its own subdomain (e.g. `rag.mcspconsulting.com`). Local dev at `http://localhost:8000`.
 **Local path:** `D:\laragon\www\Freelance\`
-**Repo:** `github.com/mcsp-web/aidemo` (branch `main`) — **private** (OPEN-1 closed).
+**Repo:** `github.com/mcsp-web/aidemo` (branch `main`) — **public since Nov 10, 2026** (v0.10.2; private Sept 13 – Nov 10, OPEN-1). History scanned before the switch: no secrets, no server address.
 
 ---
 
@@ -291,6 +291,15 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Idea, not proposed yet (MCSP repo):** give the MCSP prospect finder a second offer, AskDoc: fit-based scoring, an opener about the questions staff answer every day, and a personal page linking the matching industry demo (`/hoa`, `/dental`). Needs a propose-first plan in the MCSP repo. For HOAs, Florida's Sunbiz registry (HOAs are nonprofit corporations with listed officers) may be a better lead source than Google Places; not yet checked.
 - **Outcome:** docs only.
 
+
+### [v0.10.2] — Nov 11, 2026 — Repo made public as a portfolio piece; showcase README (docs only)
+**Summary:** James made `mcsp-web/aidemo` public on Nov 10 so it can be shown to employers (MCSP canon S8.8: a frontend / AI-evaluation contract that requires a public GitHub). No code changed.
+- **README rewritten (PR #2, merged):** both editions, the Lite front end, the test summary (47 checks: `test_lite.py` 30, `test_api.py` 12, `test_pipeline.py` 5, all passing; each suite runs in CI before its image is built), run and deploy notes; three screenshots in `docs/screenshots/` (the portfolio's images). The old Fiverr and sales notes are gone.
+- **Checked before going public:** gitleaks over the full history (no findings; `.env.example` holds placeholders only) and a sweep for addresses, emails and phone numbers (only test fixtures such as `2.2.2.2`). This canon and the roadmap are now public too: they name `coolify.mcspconsulting.com`, the server size and the Gig C prices, none of them secret.
+- **Server (cross-project, Launchpad canon Section 49, Nov 11):** every DNS record pointing at the server is proxied and the Hetzner firewall takes ports 80/443 from Cloudflare only. Nothing changes for `aidemo` (already proxied, INFRA-06).
+- **Private-demo decision now contradicted (OPEN-16):** the README, the GitHub profile README and James's Frontend résumé all link `aidemo.mcspconsulting.com`, so the demo is public by link, against v0.10.1's "private, shared by direct link" and the portfolio's "Link it publicly: off". James to decide: keep it public (then confirm the Lite key has its own Anthropic spend limit, tick the portfolio's "Link it publicly", and decide about the MCSP AI page's test) or take the links down.
+- **Outcome:** docs only; all three test scripts pass.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -315,6 +324,7 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - Coolify app live (**Running**) via GitHub App source, Docker Compose build pack.
 - Domain bound (`aidemo.mcspconsulting.com` → `askdoc:8000`), HTTP→HTTPS on, `ANTHROPIC_API_KEY` set.
 - Repo `mcsp-web/aidemo` set **private**; VPS IP redacted from the canon (OPEN-1 closed).
+- Repo made **public** on Nov 10 with a showcase README (v0.10.2, PR #2).
 - Image builds moved to GitHub Actions → GHCR; Coolify pulls the prebuilt image (INFRA-11, v0.7.0).
 - DNS **proxied** (orange) confirmed — `CF-RAY` header observed live on `aidemo.mcspconsulting.com` (OPEN-2 closed).
 - Domain routing survives a redeploy — after the v0.7.0 pull redeploy, `GET /` via the domain returned 200 and `/health` returned 200; re-checked Sept 14 (OPEN-5 closed). `SERVICE_FQDN_ASKDOC_8000` is committed in `docker-compose.yml`.
@@ -328,6 +338,7 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Client Edition planned** (v0.10.0, D-8 to D-10): six commits CLIENT-01 to CLIENT-06, then the Library edition (LIB-01). See the ROADMAP.
 
 ### ⏳ OPEN — do these next
+- **OPEN-16 — The demo is now public by link (James decides):** README, GitHub profile and résumé link `aidemo.mcspconsulting.com`. Keep it public (confirm the Lite key has its own Anthropic spend limit; tick "Link it publicly" on the portfolio; decide on the MCSP AI page test), or remove the links. See v0.10.2.
 - **OPEN-13 — Switch off auto-deploy on the Lite resource (James, Coolify):** Configuration → Advanced → Deployment → Auto deploy → the off/manual option → Save. Then every deploy is: `build-lite` green → Redeploy.
 - **OPEN-15 — v0.9.1 Redeploy + live smoke test (BOLD, James):** the v0.9.1 image is built (green Nov 6); Redeploy if not done yet. Check first: load the HOA samples, switch to the Any business tab → the HOA questions stay, with "Load the Any business sample documents instead". On `/hoa`: Load sample documents → ask "Can I put up a wood fence, and what does it cost to apply?" → expect "no, vinyl or aluminum only" + $50, quoting the CC&Rs and the Rules and Fees file. On `/dental`: the third-cleaning question → quotes the PPO summary. On `/`: the $3,000 purchase question → department head. Then: add one of your own files (6th file refused), remove one, refresh (library stays), open a private window (empty).
 - **OPEN-14 — Watch for repeated sentences in answers** (one seen on Nov 4). If it recurs, capture the raw API content blocks from the log and decide on a fix. *(CLI)*
