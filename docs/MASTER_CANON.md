@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
-**Last Updated:** November 11, 2026 (session 6)
-**Current Version:** v0.10.4
+**Last Updated:** November 12, 2026 (session 7)
+**Current Version:** v0.10.5
 **Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). Up to 5 documents per visitor and industry pages `/`, `/hoa`, `/dental` with sample packs (D-7): v0.9.0 live since Nov 6 (first look done); v0.9.1 (questions follow loaded documents, no cut-off answers) built green Nov 6, its Redeploy and the full smoke test are OPEN-15. Next build: the Client Edition (D-8, plan v0.10.0). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
@@ -313,6 +313,14 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Cost ceiling:** the Lite key's Anthropic workspace has a **$10 monthly spend limit** (James, Nov 11). OPEN-17 closed.
 - **Deploy (James):** after `build-lite` is green, Redeploy the Lite resource; Coolify creates the volume from the compose file. Smoke test in the ROADMAP.
 
+### [v0.10.5] — Nov 12, 2026 — The hardened demo is live; the day's count survives a redeploy (docs only)
+**Summary:** #4 and #5 merged; `build-lite` green (Nov 12, 13:22 UTC); James redeployed the Lite resource (commit `b5f7576`) and checked it from Coolify's Terminal. No code changed.
+- **Proven (James, screenshots):** `LITE_GUARD_FILE` is `/data/guard.json` in the container; `/data` is its own disk (`mount` shows it); the file appears after the first answered question (`{"day": "2026-11-12", "used": 1}`); after a Redeploy (new container, `a599e4e5fe7f` -> `a74f7eaee5a0`) it still reads `used: 1`. The file is written only when a question passes the checks, so an empty `/data` before the first question is expected.
+- **Still live and working:** `/hoa` and `/dental` answer as before; the MCSP AI page's "Try the live demo" button works in English, French and Spanish (MCSP #71, merged).
+- **Not checked yet:** the upload limit (20+ files quickly from one browser -> "You've added a lot of files in a short time").
+- **Coolify label:** the Lite resource may be renamed from `aidemo:main-…` to `askdoc-lite` (Name field, Save); Coolify keys the app by its ID, so the domain, container and volume are unaffected.
+- **Proposed (OPEN-19, waiting for James's go):** the page explains too little. Like ChatPDF, Humata and Chatbase, add below the demo: a one-line promise, "How it works" in three steps, about 12 industry cards (documents read + two example questions; HOA and dental link to their pages), what happens to your documents (written from the code), a short FAQ and a button to MCSP's AI page; English, French and Spanish with a switch. Page words and layout only; upload and question code untouched.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -352,7 +360,8 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Client Edition planned** (v0.10.0, D-8 to D-10): six commits CLIENT-01 to CLIENT-06, then the Library edition (LIB-01). See the ROADMAP.
 
 ### ⏳ OPEN — do these next
-- **OPEN-18 — Redeploy and smoke-test the hardened demo (BOLD, James):** after `build-lite` is green, Redeploy the Lite resource; in Coolify → the resource → Storages, `askdoc-lite-data` exists; on `/hoa`, load samples and ask one question (answer with quotes); add 20+ files quickly from one browser → "You've added a lot of files in a short time". OPEN-17 closed (v0.10.4).
+- **OPEN-18 — Last check of the hardened demo (BOLD, James):** redeploy, volume and the day's count across a redeploy **proven** (v0.10.5). Left: add 20+ files quickly from one browser → "You've added a lot of files in a short time".
+- **OPEN-19 — Explain the demo page (proposed v0.10.5, waiting for James's go):** one-line promise, How it works (3 steps), ~12 industry cards, what happens to your documents (from the code), FAQ, button to MCSP's AI page; EN/FR/ES with a switch. Check the answer language for FR/ES visitors before claiming it. One PR, page only.
 - **OPEN-13 — Switch off auto-deploy on the Lite resource (James, Coolify):** Configuration → Advanced → Deployment → Auto deploy → the off/manual option → Save. Then every deploy is: `build-lite` green → Redeploy.
 - **OPEN-15 — v0.9.1 Redeploy + live smoke test (BOLD, James):** the v0.9.1 image is built (green Nov 6); Redeploy if not done yet. Check first: load the HOA samples, switch to the Any business tab → the HOA questions stay, with "Load the Any business sample documents instead". On `/hoa`: Load sample documents → ask "Can I put up a wood fence, and what does it cost to apply?" → expect "no, vinyl or aluminum only" + $50, quoting the CC&Rs and the Rules and Fees file. On `/dental`: the third-cleaning question → quotes the PPO summary. On `/`: the $3,000 purchase question → department head. Then: add one of your own files (6th file refused), remove one, refresh (library stays), open a private window (empty).
 - **OPEN-14 — Watch for repeated sentences in answers** (one seen on Nov 4). If it recurs, capture the raw API content blocks from the log and decide on a fix. *(CLI)*
@@ -363,8 +372,8 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **OPEN-9 — CPU-only torch (INFRA-13).** Install torch from the CPU wheel index to drop ~1 GB of CUDA/triton from the ~3.2 GB image (smaller pull + disk). Changes image contents and forces a full CI rebuild — its own concern, propose-first. *(CLI)*
 
 ### 🔗 CROSS-PROJECT LOOPS (opened this session, tracked elsewhere)
-- **Portfolio** (`mcsp-web/portfolio`) — AskDoc Lite seeded in production as its own project (little brother of AskDoc RAG). Its live link stays off while the demo is private; tick "Link it publicly" only if the demo goes public.
-- **mcspconsulting AI service page** — corrected v0.10.1: no `AI_DEMO_URL` exists; the demo is private (shared by direct link) by decision in that repo, and a test forbids linking it. Making it public = a decision + code change there.
+- **Portfolio** (`mcsp-web/portfolio`) — AskDoc Lite's live link is **on** (James, Nov 12).
+- **mcspconsulting AI service page** — "Try the live demo" button live (MCSP #71, `AI_DEMO_URL`), checked in EN/FR/ES by James Nov 12.
 - **MCSP prospect finder** — idea: an AskDoc offer linking the industry demo pages (v0.10.1). Propose-first in the MCSP repo.
 - **HOA platform** — researched and **parked** (v0.10.1, [HOA Platform Research](https://claude.ai/artifact/8g2y3qqoJhRuRpwHLikhzw)); January check; meanwhile the AskDoc HOA assistant is offered to Florida HOA boards as a cheap test.
 - **GTM assets** — once the demo is confirmed live: screenshot it for the Fiverr gallery (image 3) and record the 30-second demo video.
