@@ -309,5 +309,77 @@ print("[ok] daily cap for the whole demo")
 assert client.post("/ask", json={"question": "x" * 1001}).status_code == 400
 print("[ok] overlong question refused")
 
+# ---------------------------------------------------------------- OPEN-17: limits that hold on a public demo
+ml.guard = ml.Guard()
+os.environ["LITE_VISITOR_QUESTIONS"] = "2"
+v6 = [client.post("/ask", json={"question": "PTO?"}, headers={"cf-connecting-ip": f"2001:db8:aa:bb::{n}"}).status_code for n in (1, 2, 3)]
+assert v6 == [200, 200, 429], v6
+assert client.post("/ask", json={"question": "PTO?"}, headers={"cf-connecting-ip": "2001:db8:aa:cc::1"}).status_code == 200
+del os.environ["LITE_VISITOR_QUESTIONS"]
+print("[ok] IPv6: rotating addresses inside one /64 counts as one visitor; another /64 is someone else")
+
+
+class _Req:
+    def __init__(self, headers, host="10.0.0.1"):
+        self.headers = headers
+        self.client = type("C", (), {"host": host})()
+
+
+assert ml.visitor_id(_Req({"cf-connecting-ip": "::ffff:1.2.3.4"})) == "1.2.3.4"
+assert ml.visitor_id(_Req({"cf-connecting-ip": "203.0.113.9"})) == "203.0.113.9"
+assert ml.visitor_id(_Req({})) == "10.0.0.1"
+print("[ok] visitor address: IPv4 as is, IPv4-mapped IPv6 as IPv4, no header -> the connection's address")
+
+import tempfile  # noqa: E402
+guard_file = os.path.join(tempfile.mkdtemp(), "guard.json")
+os.environ["LITE_GUARD_FILE"] = guard_file
+ml.guard = ml.Guard()
+os.environ["LITE_DAILY_QUESTIONS"] = "2"
+assert client.post("/ask", json={"question": "PTO?"}, headers={"cf-connecting-ip": "4.4.4.4"}).status_code == 200
+assert client.post("/ask", json={"question": "PTO?"}, headers={"cf-connecting-ip": "4.4.4.5"}).status_code == 200
+ml.guard = ml.Guard()  # a restart or redeploy
+r = client.post("/ask", json={"question": "PTO?"}, headers={"cf-connecting-ip": "4.4.4.6"})
+assert r.status_code == 429 and "tomorrow" in r.json()["detail"], r.text
+with open(guard_file, "w") as f:
+    json.dump({"day": "2000-01-01", "used": 99}, f)
+ml.guard = ml.Guard()  # yesterday's file: a new day starts at zero
+assert client.post("/ask", json={"question": "PTO?"}, headers={"cf-connecting-ip": "4.4.4.7"}).status_code == 200
+with open(guard_file, "w") as f:
+    f.write("not json")
+assert ml.Guard().used == 0
+del os.environ["LITE_GUARD_FILE"], os.environ["LITE_DAILY_QUESTIONS"]
+ml.guard = ml.Guard()
+print("[ok] with LITE_GUARD_FILE the day's count survives a restart; an old or broken file starts the day at zero")
+
+ml.uploads = ml.UploadLimit()
+os.environ["LITE_VISITOR_UPLOADS"] = "2"
+up = TestClient(ml.app)
+small = pdf(["Short page."])
+codes = [up.post("/upload", files={"file": ("a.pdf", small, "application/pdf")}, headers={"cf-connecting-ip": "5.5.5.5"}).status_code for _ in range(2)]
+r = up.post("/samples/hoa", headers={"cf-connecting-ip": "5.5.5.5"})
+assert codes == [200, 200] and r.status_code == 429 and "a few minutes" in r.json()["detail"], (codes, r.text)
+assert up.post("/samples/hoa", headers={"cf-connecting-ip": "5.5.5.6"}).status_code == 200
+del os.environ["LITE_VISITOR_UPLOADS"]
+ml.uploads = ml.UploadLimit()
+print("[ok] uploads and sample loads: a per-visitor limit; other visitors unaffected")
+
+import zipfile as _zip  # noqa: E402
+from app import extract as ex  # noqa: E402
+bomb = io.BytesIO()
+with _zip.ZipFile(bomb, "w", _zip.ZIP_DEFLATED) as z:
+    z.writestr("[Content_Types].xml", "<Types/>")
+    z.writestr("word/document.xml", "0" * (ex.MAX_DOCX_EXPANDED_BYTES + 1))
+assert len(bomb.getvalue()) < 1_000_000  # small on disk, huge once unzipped
+r = up.post("/upload", files={"file": ("bomb.docx", bomb.getvalue(), "application/octet-stream")}, headers={"cf-connecting-ip": "6.6.6.6"})
+assert r.status_code == 422 and "too large to read once opened" in r.json()["detail"], r.text
+r = up.post("/upload", files={"file": ("broken.docx", b"not a zip", "application/octet-stream")}, headers={"cf-connecting-ip": "6.6.6.7"})
+assert r.status_code == 422 and "can't be read" in r.json()["detail"], r.text
+saved_pages = ex.MAX_PDF_PAGES
+ex.MAX_PDF_PAGES = 2
+r = up.post("/upload", files={"file": ("long.pdf", pdf(["p1", "p2", "p3"]), "application/pdf")}, headers={"cf-connecting-ip": "6.6.6.8"})
+assert r.status_code == 422 and "pages" in r.json()["detail"], r.text
+ex.MAX_PDF_PAGES = saved_pages
+print("[ok] files checked before parsing: a Word file that unzips past 50 MB, a broken one, a PDF over the page limit -> 422")
+
 server.shutdown()
 print("\nALL LITE CHECKS PASSED")

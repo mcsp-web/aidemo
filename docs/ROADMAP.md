@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.10.3 · Nov 11, 2026**
+**Derived from `MASTER_CANON.md` v0.10.4 · Nov 11, 2026**
 **Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); up to 5 documents and the `/`, `/hoa`, `/dental` pages with sample packs (D-7) live since Nov 6 (v0.9.0); v0.9.1 built, Redeploy + smoke test pending (OPEN-15). Next build: the Client Edition (D-8). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
@@ -25,6 +25,7 @@
 | INFRA-07 | Repo `mcsp-web/aidemo` set **private** | v0.6.0 |
 | INFRA-21 | Repo made **public** (Nov 10) with a showcase README and screenshots; history scanned clean | v0.10.2 |
 | GTM-10 | Demo public by decision (D-11): README, GitHub profile, résumé, portfolio, MCSP AI page | v0.10.2 |
+| HARDEN-07 | Public demo hardened: IPv6 per /64, day count kept on a volume, upload limit, DOCX/PDF limits before parsing | v0.10.4 |
 | APP-09 | Multi-format ingestion — DOCX/TXT/MD alongside PDF; `kind`-aware "Page N" / "Part N" source labels | v0.6.0 |
 | APP-10 | Drop-zone border fix — `.drop` `display:block` (was a fragmented inline `<label>`) | v0.6.0 |
 | HARDEN-05 | `build()` made atomic — a failed upload no longer leaves a torn index | v0.6.0 |
@@ -36,7 +37,7 @@
 | APP-11 | AskDoc Lite engine — whole document to Claude with built-in citations + prompt caching; answers quote the passage and page | v0.8.0 |
 | APP-12 | Shared extraction module `app/extract.py` (moved verbatim from `rag.py`, re-exported) | v0.8.0 |
 | APP-13 | Shared UI made engine-aware (Lite mark, tagline, "quoted" sources) | v0.8.0 |
-| HARDEN-07 | Lite spending guards — daily cap, per-visitor window, question/document/answer size caps; API errors → 502, no key → 503 | v0.8.0 |
+| INFRA-22 | Redeploy the hardened Lite demo (volume `askdoc-lite-data` appears), then smoke-test a question and the upload limit | **James** | OPEN-18 |
 | HARDEN-08 | `test_lite.py` — real SDK against a fake API server; asserts no torch/numpy/RAG import | v0.8.0 |
 | INFRA-14 | Lite image pipeline — `Dockerfile.lite`, `docker-compose.lite.yml`, `build-lite.yml` → `ghcr.io/mcsp-web/aidemo-lite` | v0.8.0 |
 | INFRA-15 | Lite deployed in Coolify; `aidemo.mcspconsulting.com` moved from the RAG resource (RAG placeholder `rag.mcspconsulting.com:8000`) | v0.8.1 |

@@ -16,6 +16,12 @@ services:
       - LITE_VISITOR_QUESTIONS=${LITE_VISITOR_QUESTIONS:-15}
       # About 200 pages of text; larger documents are pointed to the RAG version.
       - LITE_MAX_CHARS=${LITE_MAX_CHARS:-400000}
+      # Uploads and sample loads per visitor per 10 minutes (CPU and memory on the shared server).
+      - LITE_VISITOR_UPLOADS=${LITE_VISITOR_UPLOADS:-20}
+      # The day's question count, kept across restarts and redeploys on the volume below.
+      - LITE_GUARD_FILE=/data/guard.json
+    volumes:
+      - askdoc-lite-data:/data
     healthcheck:
       test: ["CMD","python","-c","import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
@@ -23,3 +29,6 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+
+volumes:
+  askdoc-lite-data:

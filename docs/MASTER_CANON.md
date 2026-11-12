@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
 **Last Updated:** November 11, 2026 (session 6)
-**Current Version:** v0.10.3
+**Current Version:** v0.10.4
 **Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). Up to 5 documents per visitor and industry pages `/`, `/hoa`, `/dental` with sample packs (D-7): v0.9.0 live since Nov 6 (first look done); v0.9.1 (questions follow loaded documents, no cut-off answers) built green Nov 6, its Redeploy and the full smoke test are OPEN-15. Next build: the Client Edition (D-8, plan v0.10.0). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
@@ -304,6 +304,15 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 ### [v0.10.3] — Nov 11, 2026 — The demo is public (D-11); abuse review; hardening proposed (docs only)
 **Summary:** James decided the Lite demo stays public (D-11, OPEN-16 closed). The live code was reviewed for ways around its limits (findings in the v0.10.2 entry above); four gaps are proposed as OPEN-17, not built (propose-first). All three test scripts pass.
 
+### [v0.10.4] — Nov 11, 2026 — The public demo hardened (OPEN-17 built, James's go)
+**Summary:** the four gaps from the v0.10.2 review, fixed with a test each. Each new guard was broken once on purpose and its test failed. `test_lite.py` 35 checks, `test_api.py`, `test_pipeline.py`: all pass.
+- **(A) IPv6 per /64** (`visitor_id`): rotating addresses inside one /64 count as one visitor; IPv4-mapped IPv6 is read as IPv4. The address is `CF-Connecting-IP`, which Cloudflare sets and the firewall makes unforgeable (Launchpad canon Section 49).
+- **(B) The day's count survives restarts and redeploys:** `LITE_GUARD_FILE` (set to `/data/guard.json`) on the new compose volume `askdoc-lite-data`; yesterday's or a broken file starts the day at zero.
+- **(C) Uploads and sample loads:** `UploadLimit`, `LITE_VISITOR_UPLOADS` (20) per `LITE_VISITOR_WINDOW_SECONDS` (600) per visitor, checked before the file is read; 429 with a plain message.
+- **(D) Files checked before parsing** (`extract.py`, shared with RAG): a PDF over 1,000 pages, a Word file over 2,000 entries or 50 MB once unzipped, or a broken .docx -> 422 with a plain message.
+- **Cost ceiling:** the Lite key's Anthropic workspace has a **$10 monthly spend limit** (James, Nov 11). OPEN-17 closed.
+- **Deploy (James):** after `build-lite` is green, Redeploy the Lite resource; Coolify creates the volume from the compose file. Smoke test in the ROADMAP.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -343,7 +352,7 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Client Edition planned** (v0.10.0, D-8 to D-10): six commits CLIENT-01 to CLIENT-06, then the Library edition (LIB-01). See the ROADMAP.
 
 ### ⏳ OPEN — do these next
-- **OPEN-17 — Harden the public demo (propose-first; CLI after James's go):** (A) count IPv6 visitors per /64; (B) keep the day's count across restarts (a small file on a volume, or accept the reset); (C) a per-visitor upload limit (e.g. 20 per 10 minutes) on `/upload` and `/samples`; (D) refuse a DOCX whose expanded size passes ~50 MB and a PDF over ~1,000 pages before parsing. Tests for each. Also (James): confirm the Lite key's Anthropic workspace has a monthly spend limit, and tick "Show live link" on the portfolio's AskDoc Lite project.
+- **OPEN-18 — Redeploy and smoke-test the hardened demo (BOLD, James):** after `build-lite` is green, Redeploy the Lite resource; in Coolify → the resource → Storages, `askdoc-lite-data` exists; on `/hoa`, load samples and ask one question (answer with quotes); add 20+ files quickly from one browser → "You've added a lot of files in a short time". OPEN-17 closed (v0.10.4).
 - **OPEN-13 — Switch off auto-deploy on the Lite resource (James, Coolify):** Configuration → Advanced → Deployment → Auto deploy → the off/manual option → Save. Then every deploy is: `build-lite` green → Redeploy.
 - **OPEN-15 — v0.9.1 Redeploy + live smoke test (BOLD, James):** the v0.9.1 image is built (green Nov 6); Redeploy if not done yet. Check first: load the HOA samples, switch to the Any business tab → the HOA questions stay, with "Load the Any business sample documents instead". On `/hoa`: Load sample documents → ask "Can I put up a wood fence, and what does it cost to apply?" → expect "no, vinyl or aluminum only" + $50, quoting the CC&Rs and the Rules and Fees file. On `/dental`: the third-cleaning question → quotes the PPO summary. On `/`: the $3,000 purchase question → department head. Then: add one of your own files (6th file refused), remove one, refresh (library stays), open a private window (empty).
 - **OPEN-14 — Watch for repeated sentences in answers** (one seen on Nov 4). If it recurs, capture the raw API content blocks from the log and decide on a fix. *(CLI)*
