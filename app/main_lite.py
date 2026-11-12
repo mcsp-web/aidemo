@@ -1,7 +1,8 @@
 """
 main_lite.py — the AskDoc Lite web app.
 
-  GET  /, /hoa, /dental     -> the Lite page (any business, HOA, dental office)
+  GET  /, /hoa, /dental     -> the Lite page (any business, HOA, dental office);
+                               /fr/... and /es/... the same in French and Spanish
   POST /upload              -> add a document to the visitor's library (up to 5)
   POST /remove              -> take one document out of the library
   POST /samples/{pack}      -> load a ready-made sample pack (hoa, dental, general)
@@ -327,10 +328,16 @@ async def ask(req: AskRequest, request: Request) -> dict:
     return result
 
 
-# The same page serves every industry; it reads its industry from the address.
+# The same page serves every industry and language; it reads both from the address.
 @app.get("/")
 @app.get("/hoa")
 @app.get("/dental")
+@app.get("/fr")
+@app.get("/fr/hoa")
+@app.get("/fr/dental")
+@app.get("/es")
+@app.get("/es/hoa")
+@app.get("/es/dental")
 def page() -> FileResponse:
     return FileResponse(STATIC_DIR / "lite.html")
 

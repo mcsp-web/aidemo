@@ -156,6 +156,60 @@
 
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--danger); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow); display: none; max-width: calc(100% - 32px); }
   .toast.show { display: block; }
+
+  /* ---- language switch ---- */
+  .right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .right .tabs { min-width: 0; max-width: 100%; position: relative; }
+  .langs { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 4px; }
+  .langs a { text-decoration: none; color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 9px; border-radius: 8px; }
+  .langs a:hover { color: var(--ink); }
+  .langs a[aria-current="true"] { background: var(--ink); color: #fff; }
+
+  /* ---- intro under the top bar ---- */
+  .intro { max-width: 1080px; margin: 0 auto; padding: 18px 20px 0; }
+  .intro h2 { font-family: "Space Grotesk", sans-serif; font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.01em; max-width: 760px; }
+  .intro p { margin: 0; color: var(--muted); font-size: 14px; max-width: 760px; }
+  .intro a { font-weight: 600; white-space: nowrap; }
+  .intro .lang-note { margin-top: 6px; font-size: 12.5px; }
+
+  /* ---- explanation below the demo ---- */
+  .more { max-width: 1080px; margin: 0 auto; padding: 8px 20px 48px; }
+  .more section { margin-top: 40px; scroll-margin-top: 16px; }
+  .more h2 { font-family: "Space Grotesk", sans-serif; font-size: 20px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .more .lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  .steps { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; counter-reset: step; }
+  .steps li { counter-increment: step; }
+  .steps li::before {
+    content: counter(step); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-family: "Space Grotesk", sans-serif; font-weight: 700; margin-bottom: 10px;
+  }
+  .steps h3, .use h3 { font-family: "Space Grotesk", sans-serif; font-size: 15px; margin: 0 0 4px; }
+  .steps p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .uses { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .use { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px; display: flex; flex-direction: column; }
+  .use .reads { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+  .use .reads b { color: var(--ink); font-weight: 600; }
+  .use ul { margin: 0 0 10px; padding-left: 16px; font-size: 13px; }
+  .use li + li { margin-top: 3px; }
+  .use .go { margin-top: auto; font-size: 12.5px; font-weight: 600; text-decoration: none; }
+  .use .go:hover { text-decoration: underline; }
+  .use .own { margin-top: auto; font-size: 12.5px; color: var(--muted); }
+  .privacy { margin: 0; padding-left: 18px; font-size: 14px; }
+  .privacy li + li { margin-top: 8px; }
+  .faq details { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px 15px; }
+  .faq details + details { margin-top: 8px; }
+  .faq summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  .faq details p { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); }
+  .cta { margin-top: 40px; background: var(--ink); color: #fff; border-radius: var(--radius); padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .cta h2 { color: #fff; margin: 0 0 4px; }
+  .cta p { margin: 0; color: #c9d1d8; font-size: 14px; }
+  .cta a { background: #fff; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px; padding: 11px 18px; border-radius: 10px; white-space: nowrap; }
+  .foot { text-align: center; font-size: 12px; color: var(--muted); margin: 28px 0 0; }
+  .foot a { color: var(--muted); }
+  @media (max-width: 820px) {
+    .steps { grid-template-columns: minmax(0, 1fr); }
+    .intro h2 { font-size: 19px; }
+  }
 </style>
 </head>
 <body data-pack="general">
@@ -167,117 +221,951 @@
       <p id="tagline"></p>
     </div>
   </div>
-  <nav class="tabs" aria-label="Industry">
-    <a href="/" data-tab="general">Any business</a>
-    <a href="/hoa" data-tab="hoa">HOA</a>
-    <a href="/dental" data-tab="dental">Dental office</a>
-  </nav>
+  <div class="right">
+    <nav class="tabs" aria-label="Industry" id="tabs">
+      <a href="/" data-tab="general">Any business</a>
+      <a href="/hoa" data-tab="hoa">HOA</a>
+      <a href="/dental" data-tab="dental">Dental office</a>
+    </nav>
+    <nav class="langs" aria-label="Language" id="langs">
+      <a href="/" data-lang="en" hreflang="en">EN</a>
+      <a href="/fr" data-lang="fr" hreflang="fr">FR</a>
+      <a href="/es" data-lang="es" hreflang="es">ES</a>
+    </nav>
+  </div>
 </header>
+
+<div class="intro">
+  <h2 data-t="introTitle"></h2>
+  <p><span data-t="introText"></span> <a href="#how" data-t="introLink"></a></p>
+  <p class="lang-note" data-t="samplesLang"></p>
+</div>
 
 <div class="wrap">
   <aside>
     <div class="card">
-      <h2>Documents <small id="count"></small></h2>
+      <h2><span data-t="docs">Documents</span> <small id="count"></small></h2>
       <p class="hint" id="docsHint"></p>
 
       <div class="sample">
         <div class="what" id="sampleWhat"></div>
         <div class="files" id="sampleFiles"></div>
-        <button class="btn" id="loadSamples">Load sample documents</button>
+        <button class="btn" id="loadSamples" data-t="load">Load sample documents</button>
       </div>
 
       <ul class="docs" id="docs"></ul>
 
       <label class="drop" id="drop">
-        <div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Add your own document</div>
-        <div class="small">PDF, Word, text or Markdown · up to 5 files</div>
+        <div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span data-t="addOwn">Add your own document</span></div>
+        <div class="small" data-t="addSmall">PDF, Word, text or Markdown · up to 5 files</div>
         <input type="file" id="file" accept=".pdf,.docx,.doc,.txt,.md" multiple />
       </label>
     </div>
 
     <div class="card">
-      <h2>Try asking</h2>
+      <h2 data-t="tryAsking">Try asking</h2>
       <p class="hint" id="askHint"></p>
       <div class="examples" id="examples"></div>
       <button class="switch" id="askSwitch" hidden></button>
     </div>
 
-    <p class="note">Sample documents are fictional. Your files are private to your browser session and are deleted after an hour without use.</p>
+    <p class="note" data-t="note">Sample documents are fictional. Your files are private to your browser session and are deleted after an hour without use.</p>
   </aside>
 
   <main class="chat">
     <div class="transcript" id="transcript">
       <div class="empty" id="empty">
         <div class="big" id="emptyTitle"></div>
-        <p>Every answer is drawn only from the documents loaded, and quotes the exact passage, file and page so you can check it.</p>
+        <p data-t="emptyP">Every answer is drawn only from the documents loaded, and quotes the exact passage, file and page so you can check it.</p>
       </div>
     </div>
     <div class="composer">
       <input id="q" type="text" placeholder="Load documents first…" disabled />
-      <button class="send" id="send" disabled>Ask</button>
+      <button class="send" id="send" data-t="ask" disabled>Ask</button>
     </div>
   </main>
 </div>
 
+<div class="more">
+  <section id="how">
+    <h2 data-t="howTitle"></h2>
+    <ol class="steps" id="steps"></ol>
+  </section>
+  <section id="uses-section">
+    <h2 data-t="usesTitle"></h2>
+    <p class="lead" data-t="usesText"></p>
+    <div class="uses" id="uses"></div>
+  </section>
+  <section id="privacy">
+    <h2 data-t="privacyTitle"></h2>
+    <ul class="privacy" id="privacyList"></ul>
+  </section>
+  <section id="faq" class="faq">
+    <h2 data-t="faqTitle"></h2>
+    <div id="faqList"></div>
+  </section>
+  <div class="cta">
+    <div><h2 data-t="ctaTitle"></h2><p data-t="ctaText"></p></div>
+    <a id="ctaLink" target="_blank" rel="noopener" data-t="ctaBtn"></a>
+  </div>
+  <p class="foot"><a href="https://mcspconsulting.com" target="_blank" rel="noopener" data-t="footer"></a></p>
+</div>
+
 <div class="toast" id="toast" role="alert"></div>
 
+<!-- Every word on the page, in English, French and Spanish. tests check the three have the same shape. -->
+<script type="application/json" id="i18n">
+{
+ "en": {
+  "meta": {
+   "title": "Ask Your Document Lite: answers from your documents, with the quote",
+   "description": "Ask questions of your documents and get answers that quote the exact passage and page. Free demo by MCSP Consulting."
+  },
+  "ui": {
+   "docs": "Documents",
+   "load": "Load sample documents",
+   "loading": "Loading…",
+   "addOwn": "Add your own document",
+   "addSmall": "PDF, Word, text or Markdown · up to 5 files",
+   "tryAsking": "Try asking",
+   "note": "Sample documents are fictional. Your files are private to your browser session and are deleted after an hour without use.",
+   "samplesLang": "",
+   "emptyP": "Every answer is drawn only from the documents loaded, and quotes the exact passage, file and page so you can check it.",
+   "phLoad": "Load documents first…",
+   "phAsk": "Ask a question about your documents…",
+   "ask": "Ask",
+   "hintLoad": "Load the sample documents, then try one of these.",
+   "hintOther": "These match the {pack} sample documents you have loaded.",
+   "hintMatch": "Answered from the sample documents. Or ask your own question.",
+   "hintOwn": "Questions that work on most documents. Ask anything specific too.",
+   "switchTo": "Load the {pack} sample documents instead",
+   "openToRead": "(open to read)",
+   "stillLoaded": "Your documents are still loaded.",
+   "loaded": "Loaded {n} sample documents. Try a question.",
+   "added": "Added {name}.",
+   "removed": "Removed {name}.",
+   "badType": "Please choose a PDF, Word, text, or Markdown file.",
+   "tooMany": "You can load up to {max} documents. Remove one to add another.",
+   "reading": "Reading {name}…",
+   "remove": "Remove",
+   "sources1": "Sources · 1 quoted passage",
+   "sourcesN": "Sources · {n} quoted passages",
+   "page": "Page",
+   "part": "Part",
+   "pageShort": "p.",
+   "partShort": "pt.",
+   "quoted": "quoted",
+   "pages1": "page",
+   "pagesN": "pages",
+   "parts1": "part",
+   "partsN": "parts",
+   "error": "Something went wrong. Please try again.",
+   "industry": "Industry",
+   "language": "Language",
+   "introTitle": "Ask your documents. Get the answer, with the exact quote.",
+   "introText": "Load your handbooks, contracts, policies or plans and ask in plain words. AskDoc answers only from your files and shows the passage, file and page each answer comes from.",
+   "introLink": "How it works",
+   "howTitle": "How it works",
+   "usesTitle": "Who uses it",
+   "usesText": "Any business that answers the same questions from the same documents, again and again.",
+   "usesReads": "Reads",
+   "usesTry": "Try the sample",
+   "usesOwn": "Try it with your own document",
+   "privacyTitle": "What happens to your documents in this demo",
+   "faqTitle": "Common questions",
+   "ctaTitle": "Want this for your business?",
+   "ctaText": "We set AskDoc up with your own documents, on your website or app, and keep it running.",
+   "ctaBtn": "Talk to MCSP Consulting",
+   "ctaUrl": "https://mcspconsulting.com/ai-assistants",
+   "footer": "A demo by MCSP Consulting."
+  },
+  "labels": {
+   "general": "Any business",
+   "hoa": "HOA",
+   "dental": "Dental office"
+  },
+  "packs": {
+   "general": {
+    "tagline": "Your handbooks, SOPs and policies, answered with the exact quote",
+    "hint": "Load the sample company documents, or add your own.",
+    "what": "Harbor Logistics (fictional): employee handbook and operations SOPs",
+    "empty": "Ask your company's documents",
+    "questions": [
+     "How many unused PTO days carry over, and when do they expire?",
+     "Who has to approve a $3,000 purchase?",
+     "What do we do if the order system goes down?",
+     "Can I expense a $40 dinner with a glass of wine while travelling?"
+    ]
+   },
+   "hoa": {
+    "tagline": "Your CC&Rs, bylaws and rules, answered for the board, managers and residents",
+    "hint": "Load the sample HOA documents, or add your association's own.",
+    "what": "Palm Hollow HOA (fictional): CC&Rs, bylaws, rules and 2026 fees",
+    "empty": "Ask your association's documents",
+    "questions": [
+     "Can I put up a wood fence, and what does it cost to apply?",
+     "How long can I keep a boat in my driveway?",
+     "How much notice do owners get before a board meeting?",
+     "Can I rent my home on Airbnb?"
+    ]
+   },
+   "dental": {
+    "tagline": "Front-desk answers from your office manual and insurance plans",
+    "hint": "Load the sample dental office documents, or add your practice's own.",
+    "what": "Brightside Family Dental (fictional): office manual, PPO and HMO plan summaries, sterilization SOP",
+    "empty": "Ask your office's documents",
+    "questions": [
+     "Does the PPO cover a third cleaning this year?",
+     "A patient has missed two appointments this year. What do we charge?",
+     "What does an HMO member pay for a crown?",
+     "How often is the autoclave spore-tested?"
+    ]
+   }
+  },
+  "own": [
+   "What is this document about?",
+   "Summarize the key points.",
+   "What deadlines, dates or fees does it mention?",
+   "Who is responsible for what?"
+  ],
+  "steps": [
+   {
+    "t": "Load your documents",
+    "d": "Up to five PDF, Word, text or Markdown files, read together. Or load a sample set in one click."
+   },
+   {
+    "t": "Ask like you'd ask a colleague",
+    "d": "“Can I put up a fence?” “What does the PPO cover?” No keywords, no paging through files."
+   },
+   {
+    "t": "Check the quote",
+    "d": "Each answer quotes the passage, file and page it comes from. If your documents don't say, it tells you instead of guessing."
+   }
+  ],
+  "uses": [
+   {
+    "name": "HOA and condo associations",
+    "docs": "CC&Rs, bylaws, rules, fee schedules",
+    "q": [
+     "Can I paint my front door blue?",
+     "What is the late fee on dues?"
+    ],
+    "pack": "hoa"
+   },
+   {
+    "name": "Dental and medical offices",
+    "docs": "Office manual, insurance plan summaries, procedures",
+    "q": [
+     "Does this plan cover a second cleaning?",
+     "What is our no-show policy?"
+    ],
+    "pack": "dental"
+   },
+   {
+    "name": "Any company's HR",
+    "docs": "Employee handbook, policies, SOPs",
+    "q": [
+     "How many vacation days do I get?",
+     "Who approves travel?"
+    ],
+    "pack": "general"
+   },
+   {
+    "name": "Property management",
+    "docs": "Leases, house rules, maintenance procedures",
+    "q": [
+     "Who pays to fix a broken water heater?",
+     "What does the lease say about pets?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Law offices",
+    "docs": "Contracts, engagement letters, court rules",
+    "q": [
+     "When can either side end this contract?",
+     "What is the deadline to respond?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Insurance agencies",
+    "docs": "Policy wordings, coverage summaries",
+    "q": [
+     "Is flood damage covered?",
+     "What is the windstorm deductible?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Contractors and trades",
+    "docs": "Specifications, warranties, safety manuals",
+    "q": [
+     "What is the warranty on the roof?",
+     "What safety gear is required on site?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Restaurants and hotels",
+    "docs": "Staff manual, recipes, food-safety rules",
+    "q": [
+     "What temperature must chicken reach?",
+     "What is the refund policy for a cancelled room?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Schools",
+    "docs": "Student handbook, calendar, policies",
+    "q": [
+     "What happens after three late arrivals?",
+     "When does the second term start?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Churches and nonprofits",
+    "docs": "Bylaws, grant agreements, volunteer guides",
+    "q": [
+     "How many board members make a quorum?",
+     "What can the grant money be spent on?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Accounting and tax offices",
+    "docs": "Engagement letters, checklists, firm procedures",
+    "q": [
+     "What does a new client need to bring?",
+     "What does our engagement letter exclude?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Logistics and manufacturing",
+    "docs": "Operations SOPs, equipment manuals, safety rules",
+    "q": [
+     "What do we do if the order system goes down?",
+     "How often is the forklift inspected?"
+    ],
+    "pack": ""
+   }
+  ],
+  "privacy": [
+   "Only you see them. Your files are tied to your browser session; other visitors never see them.",
+   "They are kept in memory, not saved: they are deleted after an hour without use, or when the server restarts.",
+   "To write an answer, your documents and your question are sent to Claude, Anthropic's AI. Under Anthropic's commercial terms, data sent through its API is not used to train its models.",
+   "This is a public demo: please don't upload confidential files. A version for your business runs separately, with your documents kept there."
+  ],
+  "faq": [
+   {
+    "q": "Which files can I use?",
+    "a": "PDF, Word (.docx), text and Markdown: up to 20 MB each, five at a time, about 200 pages of text in all. PDFs need selectable text; scanned pages are not read yet."
+   },
+   {
+    "q": "What if the answer isn't in my documents?",
+    "a": "It says it couldn't find it in the documents rather than guessing. If they cover a similar case but not yours, it says so before giving the closest answer."
+   },
+   {
+    "q": "Can I trust the answers?",
+    "a": "Every answer shows the exact passage it used, so you can check it in seconds. For anything important, read the quote, as you would check a colleague's answer."
+   },
+   {
+    "q": "Can it work out amounts?",
+    "a": "Yes, from the figures in your documents. It says which figures it used and why."
+   },
+   {
+    "q": "What if two documents disagree?",
+    "a": "It says so and gives both."
+   },
+   {
+    "q": "Can I ask in French or Spanish?",
+    "a": "Yes. Ask in your language and it answers in it, quoting the documents as they are written."
+   },
+   {
+    "q": "Can I have this for my business?",
+    "a": "Yes. MCSP Consulting sets AskDoc up with your own documents: they stay loaded, your team can use it, and it can sit on your website or in your app."
+   }
+  ]
+ },
+ "fr": {
+  "meta": {
+   "title": "Ask Your Document Lite : des réponses tirées de vos documents, avec la citation",
+   "description": "Posez vos questions à vos documents et obtenez des réponses qui citent le passage et la page exacts. Démo gratuite de MCSP Consulting."
+  },
+  "ui": {
+   "docs": "Documents",
+   "load": "Charger les documents d'exemple",
+   "loading": "Chargement…",
+   "addOwn": "Ajouter votre propre document",
+   "addSmall": "PDF, Word, texte ou Markdown · jusqu'à 5 fichiers",
+   "tryAsking": "Essayez de demander",
+   "note": "Les documents d'exemple sont fictifs. Vos fichiers restent privés à votre session de navigation et sont supprimés après une heure sans utilisation.",
+   "samplesLang": "Les documents d'exemple sont en anglais : posez vos questions en français, la réponse sera en français.",
+   "emptyP": "Chaque réponse provient uniquement des documents chargés et cite le passage, le fichier et la page exacts pour que vous puissiez vérifier.",
+   "phLoad": "Chargez d'abord des documents…",
+   "phAsk": "Posez une question sur vos documents…",
+   "ask": "Demander",
+   "hintLoad": "Chargez les documents d'exemple, puis essayez l'une de ces questions.",
+   "hintOther": "Ces questions correspondent aux documents d'exemple « {pack} » chargés.",
+   "hintMatch": "Réponses tirées des documents d'exemple. Ou posez votre propre question.",
+   "hintOwn": "Des questions qui fonctionnent sur la plupart des documents. Posez aussi des questions précises.",
+   "switchTo": "Charger plutôt les documents d'exemple « {pack} »",
+   "openToRead": "(ouvrir pour lire)",
+   "stillLoaded": "Vos documents sont toujours chargés.",
+   "loaded": "{n} documents d'exemple chargés. Posez une question.",
+   "added": "{name} ajouté.",
+   "removed": "{name} retiré.",
+   "badType": "Choisissez un fichier PDF, Word, texte ou Markdown.",
+   "tooMany": "Vous pouvez charger jusqu'à {max} documents. Retirez-en un pour en ajouter un autre.",
+   "reading": "Lecture de {name}…",
+   "remove": "Retirer",
+   "sources1": "Sources · 1 passage cité",
+   "sourcesN": "Sources · {n} passages cités",
+   "page": "Page",
+   "part": "Partie",
+   "pageShort": "p.",
+   "partShort": "part.",
+   "quoted": "cité",
+   "pages1": "page",
+   "pagesN": "pages",
+   "parts1": "partie",
+   "partsN": "parties",
+   "error": "Une erreur s'est produite. Veuillez réessayer.",
+   "industry": "Secteur",
+   "language": "Langue",
+   "introTitle": "Interrogez vos documents. Obtenez la réponse, avec la citation exacte.",
+   "introText": "Chargez vos manuels, contrats, règlements ou polices d'assurance et posez vos questions simplement. AskDoc répond uniquement à partir de vos fichiers et indique le passage, le fichier et la page de chaque réponse.",
+   "introLink": "Comment ça marche",
+   "howTitle": "Comment ça marche",
+   "usesTitle": "Pour qui",
+   "usesText": "Toute entreprise qui répond aux mêmes questions à partir des mêmes documents, encore et encore.",
+   "usesReads": "Lit",
+   "usesTry": "Essayer l'exemple",
+   "usesOwn": "Essayez avec votre propre document",
+   "privacyTitle": "Ce que deviennent vos documents dans cette démo",
+   "faqTitle": "Questions fréquentes",
+   "ctaTitle": "Vous voulez la même chose pour votre entreprise ?",
+   "ctaText": "Nous installons AskDoc avec vos propres documents, sur votre site ou votre application, et nous le maintenons.",
+   "ctaBtn": "Parler à MCSP Consulting",
+   "ctaUrl": "https://mcspconsulting.com/fr/ai-assistants",
+   "footer": "Une démo de MCSP Consulting."
+  },
+  "labels": {
+   "general": "Toute entreprise",
+   "hoa": "Copropriété (HOA)",
+   "dental": "Cabinet dentaire"
+  },
+  "packs": {
+   "general": {
+    "tagline": "Vos manuels, procédures et règlements, avec la citation exacte",
+    "hint": "Chargez les documents d'exemple de l'entreprise, ou ajoutez les vôtres.",
+    "what": "Harbor Logistics (fictif) : manuel de l'employé et procédures d'exploitation",
+    "empty": "Interrogez les documents de votre entreprise",
+    "questions": [
+     "Combien de jours de congé non pris sont reportés, et quand expirent-ils ?",
+     "Qui doit approuver un achat de 3 000 $ ?",
+     "Que fait-on si le système de commandes tombe en panne ?",
+     "Puis-je me faire rembourser un dîner de 40 $ avec un verre de vin en déplacement ?"
+    ]
+   },
+   "hoa": {
+    "tagline": "Vos statuts, règlements et règles de copropriété, pour le conseil, les gestionnaires et les résidents",
+    "hint": "Chargez les documents d'exemple de la copropriété, ou ajoutez ceux de votre association.",
+    "what": "Palm Hollow HOA (fictif) : déclaration (CC&Rs), statuts, règles et frais 2026",
+    "empty": "Interrogez les documents de votre association",
+    "questions": [
+     "Puis-je installer une clôture en bois, et combien coûte la demande ?",
+     "Combien de temps puis-je garder un bateau dans mon allée ?",
+     "Quel préavis les propriétaires reçoivent-ils avant une réunion du conseil ?",
+     "Puis-je louer ma maison sur Airbnb ?"
+    ]
+   },
+   "dental": {
+    "tagline": "Les réponses de l'accueil, tirées de votre manuel et de vos contrats d'assurance",
+    "hint": "Chargez les documents d'exemple du cabinet dentaire, ou ajoutez ceux de votre cabinet.",
+    "what": "Brightside Family Dental (fictif) : manuel du cabinet, résumés des contrats PPO et HMO, procédure de stérilisation",
+    "empty": "Interrogez les documents de votre cabinet",
+    "questions": [
+     "Le contrat PPO couvre-t-il un troisième détartrage cette année ?",
+     "Un patient a manqué deux rendez-vous cette année. Que facture-t-on ?",
+     "Combien paie un membre HMO pour une couronne ?",
+     "À quelle fréquence l'autoclave est-il testé aux spores ?"
+    ]
+   }
+  },
+  "own": [
+   "De quoi parle ce document ?",
+   "Résumez les points clés.",
+   "Quels délais, dates ou frais mentionne-t-il ?",
+   "Qui est responsable de quoi ?"
+  ],
+  "steps": [
+   {
+    "t": "Chargez vos documents",
+    "d": "Jusqu'à cinq fichiers PDF, Word, texte ou Markdown, lus ensemble. Ou chargez un jeu d'exemples en un clic."
+   },
+   {
+    "t": "Demandez comme à un collègue",
+    "d": "« Puis-je installer une clôture ? » « Que couvre le contrat PPO ? » Pas de mots-clés, pas de pages à parcourir."
+   },
+   {
+    "t": "Vérifiez la citation",
+    "d": "Chaque réponse cite le passage, le fichier et la page d'où elle vient. Si vos documents ne le disent pas, AskDoc vous le dit au lieu de deviner."
+   }
+  ],
+  "uses": [
+   {
+    "name": "Copropriétés et associations de propriétaires",
+    "docs": "Déclaration, statuts, règlement, barème des frais",
+    "q": [
+     "Puis-je peindre ma porte d'entrée en bleu ?",
+     "Quels sont les frais de retard sur les charges ?"
+    ],
+    "pack": "hoa"
+   },
+   {
+    "name": "Cabinets dentaires et médicaux",
+    "docs": "Manuel du cabinet, résumés des contrats d'assurance, procédures",
+    "q": [
+     "Ce contrat couvre-t-il un deuxième détartrage ?",
+     "Quelle est notre règle pour les rendez-vous manqués ?"
+    ],
+    "pack": "dental"
+   },
+   {
+    "name": "Ressources humaines de toute entreprise",
+    "docs": "Manuel de l'employé, politiques, procédures",
+    "q": [
+     "Combien de jours de congé ai-je ?",
+     "Qui approuve les déplacements ?"
+    ],
+    "pack": "general"
+   },
+   {
+    "name": "Gestion immobilière",
+    "docs": "Baux, règlement intérieur, procédures d'entretien",
+    "q": [
+     "Qui paie la réparation d'un chauffe-eau en panne ?",
+     "Que dit le bail sur les animaux ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Cabinets d'avocats",
+    "docs": "Contrats, lettres de mission, règles de procédure",
+    "q": [
+     "Quand chaque partie peut-elle mettre fin à ce contrat ?",
+     "Quel est le délai pour répondre ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Agences d'assurance",
+    "docs": "Conditions des polices, résumés de garanties",
+    "q": [
+     "Les dégâts causés par une inondation sont-ils couverts ?",
+     "Quelle est la franchise en cas de tempête ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Entrepreneurs et artisans",
+    "docs": "Cahiers des charges, garanties, manuels de sécurité",
+    "q": [
+     "Quelle est la garantie sur la toiture ?",
+     "Quels équipements de sécurité sont obligatoires sur le chantier ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Restaurants et hôtels",
+    "docs": "Manuel du personnel, recettes, règles d'hygiène",
+    "q": [
+     "À quelle température le poulet doit-il cuire ?",
+     "Quelle est la politique de remboursement d'une chambre annulée ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Écoles",
+    "docs": "Règlement des élèves, calendrier, politiques",
+    "q": [
+     "Que se passe-t-il après trois retards ?",
+     "Quand commence le deuxième trimestre ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Églises et associations",
+    "docs": "Statuts, conventions de subvention, guides des bénévoles",
+    "q": [
+     "Combien de membres du conseil font le quorum ?",
+     "À quoi peut servir l'argent de la subvention ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Cabinets comptables et fiscaux",
+    "docs": "Lettres de mission, listes de contrôle, procédures du cabinet",
+    "q": [
+     "Que doit apporter un nouveau client ?",
+     "Qu'est-ce que notre lettre de mission exclut ?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Logistique et industrie",
+    "docs": "Procédures d'exploitation, manuels d'équipement, règles de sécurité",
+    "q": [
+     "Que fait-on si le système de commandes tombe en panne ?",
+     "À quelle fréquence le chariot élévateur est-il inspecté ?"
+    ],
+    "pack": ""
+   }
+  ],
+  "privacy": [
+   "Vous seul les voyez. Vos fichiers sont liés à votre session de navigation ; les autres visiteurs ne les voient jamais.",
+   "Ils sont gardés en mémoire, pas enregistrés : ils sont supprimés après une heure sans utilisation, ou au redémarrage du serveur.",
+   "Pour rédiger une réponse, vos documents et votre question sont envoyés à Claude, l'IA d'Anthropic. Selon les conditions commerciales d'Anthropic, les données envoyées par son API ne servent pas à entraîner ses modèles.",
+   "Ceci est une démo publique : n'y chargez pas de fichiers confidentiels. La version pour votre entreprise fonctionne à part, avec vos documents conservés chez elle."
+  ],
+  "faq": [
+   {
+    "q": "Quels fichiers puis-je utiliser ?",
+    "a": "PDF, Word (.docx), texte et Markdown : jusqu'à 20 Mo chacun, cinq à la fois, environ 200 pages de texte au total. Les PDF doivent contenir du texte sélectionnable ; les pages scannées ne sont pas encore lues."
+   },
+   {
+    "q": "Et si la réponse n'est pas dans mes documents ?",
+    "a": "AskDoc dit qu'il ne l'a pas trouvée dans les documents au lieu de deviner. S'ils couvrent un cas proche mais pas le vôtre, il le précise avant de donner la réponse la plus proche."
+   },
+   {
+    "q": "Puis-je me fier aux réponses ?",
+    "a": "Chaque réponse montre le passage exact utilisé : vous vérifiez en quelques secondes. Pour toute décision importante, lisez la citation, comme vous vérifieriez la réponse d'un collègue."
+   },
+   {
+    "q": "Peut-il calculer des montants ?",
+    "a": "Oui, à partir des chiffres de vos documents. Il indique quels chiffres il a utilisés et pourquoi."
+   },
+   {
+    "q": "Et si deux documents se contredisent ?",
+    "a": "Il le signale et donne les deux."
+   },
+   {
+    "q": "Puis-je poser mes questions en français ou en espagnol ?",
+    "a": "Oui. Posez votre question dans votre langue : la réponse est dans la même langue, et les citations restent telles qu'elles sont écrites dans les documents."
+   },
+   {
+    "q": "Puis-je avoir AskDoc pour mon entreprise ?",
+    "a": "Oui. MCSP Consulting installe AskDoc avec vos propres documents : ils restent chargés, votre équipe peut l'utiliser, et il peut être intégré à votre site ou à votre application."
+   }
+  ]
+ },
+ "es": {
+  "meta": {
+   "title": "Ask Your Document Lite: respuestas de sus documentos, con la cita",
+   "description": "Haga preguntas a sus documentos y obtenga respuestas que citan el pasaje y la página exactos. Demo gratuita de MCSP Consulting."
+  },
+  "ui": {
+   "docs": "Documentos",
+   "load": "Cargar documentos de ejemplo",
+   "loading": "Cargando…",
+   "addOwn": "Agregar su propio documento",
+   "addSmall": "PDF, Word, texto o Markdown · hasta 5 archivos",
+   "tryAsking": "Pruebe a preguntar",
+   "note": "Los documentos de ejemplo son ficticios. Sus archivos son privados de su sesión del navegador y se eliminan tras una hora sin uso.",
+   "samplesLang": "Los documentos de ejemplo están en inglés: pregunte en español y la respuesta será en español.",
+   "emptyP": "Cada respuesta sale solo de los documentos cargados y cita el pasaje, el archivo y la página exactos para que pueda comprobarla.",
+   "phLoad": "Primero cargue documentos…",
+   "phAsk": "Haga una pregunta sobre sus documentos…",
+   "ask": "Preguntar",
+   "hintLoad": "Cargue los documentos de ejemplo y pruebe una de estas preguntas.",
+   "hintOther": "Estas preguntas corresponden a los documentos de ejemplo «{pack}» que cargó.",
+   "hintMatch": "Respuestas de los documentos de ejemplo. O haga su propia pregunta.",
+   "hintOwn": "Preguntas que sirven para la mayoría de los documentos. Pregunte también algo concreto.",
+   "switchTo": "Cargar en su lugar los documentos de ejemplo «{pack}»",
+   "openToRead": "(abrir para leer)",
+   "stillLoaded": "Sus documentos siguen cargados.",
+   "loaded": "{n} documentos de ejemplo cargados. Haga una pregunta.",
+   "added": "{name} agregado.",
+   "removed": "{name} quitado.",
+   "badType": "Elija un archivo PDF, Word, de texto o Markdown.",
+   "tooMany": "Puede cargar hasta {max} documentos. Quite uno para agregar otro.",
+   "reading": "Leyendo {name}…",
+   "remove": "Quitar",
+   "sources1": "Fuentes · 1 pasaje citado",
+   "sourcesN": "Fuentes · {n} pasajes citados",
+   "page": "Página",
+   "part": "Parte",
+   "pageShort": "p.",
+   "partShort": "pte.",
+   "quoted": "citado",
+   "pages1": "página",
+   "pagesN": "páginas",
+   "parts1": "parte",
+   "partsN": "partes",
+   "error": "Algo salió mal. Vuelva a intentarlo.",
+   "industry": "Sector",
+   "language": "Idioma",
+   "introTitle": "Pregunte a sus documentos. Obtenga la respuesta, con la cita exacta.",
+   "introText": "Cargue sus manuales, contratos, reglamentos o pólizas y pregunte con sus propias palabras. AskDoc responde solo a partir de sus archivos y muestra el pasaje, el archivo y la página de cada respuesta.",
+   "introLink": "Cómo funciona",
+   "howTitle": "Cómo funciona",
+   "usesTitle": "Quién lo usa",
+   "usesText": "Cualquier negocio que responde las mismas preguntas a partir de los mismos documentos, una y otra vez.",
+   "usesReads": "Lee",
+   "usesTry": "Probar el ejemplo",
+   "usesOwn": "Pruébelo con su propio documento",
+   "privacyTitle": "Qué pasa con sus documentos en esta demo",
+   "faqTitle": "Preguntas frecuentes",
+   "ctaTitle": "¿Quiere esto para su negocio?",
+   "ctaText": "Instalamos AskDoc con sus propios documentos, en su sitio web o aplicación, y lo mantenemos funcionando.",
+   "ctaBtn": "Hablar con MCSP Consulting",
+   "ctaUrl": "https://mcspconsulting.com/es/ai-assistants",
+   "footer": "Una demo de MCSP Consulting."
+  },
+  "labels": {
+   "general": "Cualquier negocio",
+   "hoa": "Propietarios (HOA)",
+   "dental": "Consultorio dental"
+  },
+  "packs": {
+   "general": {
+    "tagline": "Sus manuales, procedimientos y políticas, respondidos con la cita exacta",
+    "hint": "Cargue los documentos de ejemplo de la empresa, o agregue los suyos.",
+    "what": "Harbor Logistics (ficticia): manual del empleado y procedimientos de operación",
+    "empty": "Pregunte a los documentos de su empresa",
+    "questions": [
+     "¿Cuántos días de vacaciones no usados se transfieren y cuándo vencen?",
+     "¿Quién tiene que aprobar una compra de $3,000?",
+     "¿Qué hacemos si se cae el sistema de pedidos?",
+     "¿Puedo pasar como gasto una cena de $40 con una copa de vino en un viaje?"
+    ]
+   },
+   "hoa": {
+    "tagline": "Sus CC&Rs, estatutos y reglas, respondidos para la junta, los administradores y los residentes",
+    "hint": "Cargue los documentos de ejemplo de la asociación, o agregue los de la suya.",
+    "what": "Palm Hollow HOA (ficticia): CC&Rs, estatutos, reglas y cuotas 2026",
+    "empty": "Pregunte a los documentos de su asociación",
+    "questions": [
+     "¿Puedo poner una cerca de madera y cuánto cuesta la solicitud?",
+     "¿Cuánto tiempo puedo tener un bote en la entrada de mi casa?",
+     "¿Con cuánta anticipación se avisa a los propietarios de una reunión de la junta?",
+     "¿Puedo alquilar mi casa en Airbnb?"
+    ]
+   },
+   "dental": {
+    "tagline": "Respuestas para la recepción, de su manual y sus planes de seguro",
+    "hint": "Cargue los documentos de ejemplo del consultorio dental, o agregue los de su consultorio.",
+    "what": "Brightside Family Dental (ficticio): manual del consultorio, resúmenes de los planes PPO y HMO, procedimiento de esterilización",
+    "empty": "Pregunte a los documentos de su consultorio",
+    "questions": [
+     "¿El plan PPO cubre una tercera limpieza este año?",
+     "Un paciente faltó a dos citas este año. ¿Qué le cobramos?",
+     "¿Cuánto paga un miembro del HMO por una corona?",
+     "¿Con qué frecuencia se hace la prueba de esporas al autoclave?"
+    ]
+   }
+  },
+  "own": [
+   "¿De qué trata este documento?",
+   "Resuma los puntos clave.",
+   "¿Qué plazos, fechas o cargos menciona?",
+   "¿Quién es responsable de qué?"
+  ],
+  "steps": [
+   {
+    "t": "Cargue sus documentos",
+    "d": "Hasta cinco archivos PDF, Word, texto o Markdown, leídos juntos. O cargue un conjunto de ejemplo con un clic."
+   },
+   {
+    "t": "Pregunte como a un colega",
+    "d": "«¿Puedo poner una cerca?» «¿Qué cubre el plan PPO?» Sin palabras clave, sin hojear páginas."
+   },
+   {
+    "t": "Compruebe la cita",
+    "d": "Cada respuesta cita el pasaje, el archivo y la página de donde viene. Si sus documentos no lo dicen, se lo indica en lugar de adivinar."
+   }
+  ],
+  "uses": [
+   {
+    "name": "Asociaciones de propietarios y condominios",
+    "docs": "CC&Rs, estatutos, reglas, tabla de cuotas",
+    "q": [
+     "¿Puedo pintar mi puerta de entrada de azul?",
+     "¿Cuál es el recargo por pagar tarde las cuotas?"
+    ],
+    "pack": "hoa"
+   },
+   {
+    "name": "Consultorios dentales y médicos",
+    "docs": "Manual del consultorio, resúmenes de planes de seguro, procedimientos",
+    "q": [
+     "¿Este plan cubre una segunda limpieza?",
+     "¿Cuál es nuestra regla para las citas perdidas?"
+    ],
+    "pack": "dental"
+   },
+   {
+    "name": "Recursos humanos de cualquier empresa",
+    "docs": "Manual del empleado, políticas, procedimientos",
+    "q": [
+     "¿Cuántos días de vacaciones tengo?",
+     "¿Quién aprueba los viajes?"
+    ],
+    "pack": "general"
+   },
+   {
+    "name": "Administración de propiedades",
+    "docs": "Contratos de arrendamiento, reglas de la casa, procedimientos de mantenimiento",
+    "q": [
+     "¿Quién paga la reparación de un calentador de agua dañado?",
+     "¿Qué dice el contrato sobre las mascotas?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Bufetes de abogados",
+    "docs": "Contratos, cartas de encargo, reglas procesales",
+    "q": [
+     "¿Cuándo puede cualquiera de las partes terminar este contrato?",
+     "¿Cuál es el plazo para responder?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Agencias de seguros",
+    "docs": "Condiciones de las pólizas, resúmenes de coberturas",
+    "q": [
+     "¿Están cubiertos los daños por inundación?",
+     "¿Cuál es el deducible por tormenta?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Contratistas y oficios",
+    "docs": "Especificaciones, garantías, manuales de seguridad",
+    "q": [
+     "¿Cuál es la garantía del techo?",
+     "¿Qué equipo de seguridad es obligatorio en la obra?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Restaurantes y hoteles",
+    "docs": "Manual del personal, recetas, normas de higiene",
+    "q": [
+     "¿A qué temperatura debe llegar el pollo?",
+     "¿Cuál es la política de reembolso de una habitación cancelada?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Escuelas",
+    "docs": "Manual del estudiante, calendario, políticas",
+    "q": [
+     "¿Qué pasa después de tres llegadas tarde?",
+     "¿Cuándo empieza el segundo trimestre?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Iglesias y organizaciones sin fines de lucro",
+    "docs": "Estatutos, acuerdos de subvención, guías de voluntarios",
+    "q": [
+     "¿Cuántos miembros de la junta forman quórum?",
+     "¿En qué se puede gastar el dinero de la subvención?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Oficinas de contabilidad e impuestos",
+    "docs": "Cartas de encargo, listas de verificación, procedimientos de la firma",
+    "q": [
+     "¿Qué tiene que traer un cliente nuevo?",
+     "¿Qué excluye nuestra carta de encargo?"
+    ],
+    "pack": ""
+   },
+   {
+    "name": "Logística y manufactura",
+    "docs": "Procedimientos de operación, manuales de equipos, normas de seguridad",
+    "q": [
+     "¿Qué hacemos si se cae el sistema de pedidos?",
+     "¿Cada cuánto se inspecciona el montacargas?"
+    ],
+    "pack": ""
+   }
+  ],
+  "privacy": [
+   "Solo usted los ve. Sus archivos están ligados a su sesión del navegador; los demás visitantes nunca los ven.",
+   "Se guardan en memoria, no en disco: se eliminan tras una hora sin uso, o cuando se reinicia el servidor.",
+   "Para escribir una respuesta, sus documentos y su pregunta se envían a Claude, la IA de Anthropic. Según los términos comerciales de Anthropic, los datos enviados por su API no se usan para entrenar sus modelos.",
+   "Esta es una demo pública: no cargue archivos confidenciales. La versión para su negocio funciona por separado, con sus documentos guardados allí."
+  ],
+  "faq": [
+   {
+    "q": "¿Qué archivos puedo usar?",
+    "a": "PDF, Word (.docx), texto y Markdown: hasta 20 MB cada uno, cinco a la vez, unas 200 páginas de texto en total. Los PDF necesitan texto seleccionable; las páginas escaneadas todavía no se leen."
+   },
+   {
+    "q": "¿Y si la respuesta no está en mis documentos?",
+    "a": "Dice que no la encontró en los documentos en lugar de adivinar. Si cubren un caso parecido pero no el suyo, lo aclara antes de dar la respuesta más cercana."
+   },
+   {
+    "q": "¿Puedo confiar en las respuestas?",
+    "a": "Cada respuesta muestra el pasaje exacto que usó, así que puede comprobarla en segundos. Para algo importante, lea la cita, como revisaría la respuesta de un colega."
+   },
+   {
+    "q": "¿Puede calcular montos?",
+    "a": "Sí, con las cifras de sus documentos. Indica qué cifras usó y por qué."
+   },
+   {
+    "q": "¿Y si dos documentos no coinciden?",
+    "a": "Lo dice y da ambos."
+   },
+   {
+    "q": "¿Puedo preguntar en español o en francés?",
+    "a": "Sí. Pregunte en su idioma y le responde en él, citando los documentos tal como están escritos."
+   },
+   {
+    "q": "¿Puedo tener esto para mi negocio?",
+    "a": "Sí. MCSP Consulting instala AskDoc con sus propios documentos: quedan cargados, su equipo puede usarlo y puede ir en su sitio web o en su aplicación."
+   }
+  ]
+ }
+}
+</script>
+
 <script>
-  // One page, three industries. The address picks the industry; only words,
-  // starter questions, sample documents and the accent colour change.
-  const PACKS = {
-    general: {
-      tagline: "Your handbooks, SOPs and policies, answered with the exact quote",
-      hint: "Load the sample company documents, or add your own.",
-      what: "Harbor Logistics (fictional): employee handbook and operations SOPs",
-      files: ["Harbor-Logistics-Employee-Handbook-2026.pdf", "Harbor-Logistics-Operations-SOPs.pdf"],
-      empty: "Ask your company's documents",
-      questions: [
-        "How many unused PTO days carry over, and when do they expire?",
-        "Who has to approve a $3,000 purchase?",
-        "What do we do if the order system goes down?",
-        "Can I expense a $40 dinner with a glass of wine while travelling?",
-      ],
-    },
-    hoa: {
-      tagline: "Your CC&Rs, bylaws and rules, answered for the board, managers and residents",
-      hint: "Load the sample HOA documents, or add your association's own.",
-      what: "Palm Hollow HOA (fictional): CC&Rs, bylaws, rules and 2026 fees",
-      files: ["Palm-Hollow-HOA-Bylaws.pdf", "Palm-Hollow-HOA-Declaration-CCRs.pdf", "Palm-Hollow-HOA-Rules-and-Fees-2026.pdf"],
-      empty: "Ask your association's documents",
-      questions: [
-        "Can I put up a wood fence, and what does it cost to apply?",
-        "How long can I keep a boat in my driveway?",
-        "How much notice do owners get before a board meeting?",
-        "Can I rent my home on Airbnb?",
-      ],
-    },
-    dental: {
-      tagline: "Front-desk answers from your office manual and insurance plans",
-      hint: "Load the sample dental office documents, or add your practice's own.",
-      what: "Brightside Family Dental (fictional): office manual, PPO and HMO plan summaries, sterilization SOP",
-      files: ["Brightside-Dental-Coastal-Shield-PPO-Summary.pdf", "Brightside-Dental-Office-Manual.pdf", "Brightside-Dental-Sterilization-SOP.pdf", "Brightside-Dental-SunState-HMO-Summary.pdf"],
-      empty: "Ask your office's documents",
-      questions: [
-        "Does the PPO cover a third cleaning this year?",
-        "A patient has missed two appointments this year. What do we charge?",
-        "What does an HMO member pay for a crown?",
-        "How often is the autoclave spore-tested?",
-      ],
-    },
+  // One page, three industries, three languages. The address picks both:
+  // /, /hoa, /dental in English; /fr/... and /es/... in French and Spanish.
+  // Only words, starter questions, sample documents and the accent colour change.
+  const I18N = JSON.parse(document.getElementById("i18n").textContent);
+  const SAMPLE_FILES = {
+    general: ["Harbor-Logistics-Employee-Handbook-2026.pdf", "Harbor-Logistics-Operations-SOPs.pdf"],
+    hoa: ["Palm-Hollow-HOA-Bylaws.pdf", "Palm-Hollow-HOA-Declaration-CCRs.pdf", "Palm-Hollow-HOA-Rules-and-Fees-2026.pdf"],
+    dental: ["Brightside-Dental-Coastal-Shield-PPO-Summary.pdf", "Brightside-Dental-Office-Manual.pdf", "Brightside-Dental-Sterilization-SOP.pdf", "Brightside-Dental-SunState-HMO-Summary.pdf"],
   };
-  const LABEL = { general: "Any business", hoa: "HOA", dental: "Dental office" };
-  // For a visitor's own files: questions that work on almost any document.
-  const OWN_QUESTIONS = [
-    "What is this document about?",
-    "Summarize the key points.",
-    "What deadlines, dates or fees does it mention?",
-    "Who is responsible for what?",
-  ];
   const PATH_PACK = { "/": "general", "/hoa": "hoa", "/dental": "dental" };
-  const packName = PATH_PACK[location.pathname.replace(/\/+$/, "") || "/"] || "general";
-  const pack = PACKS[packName];
+  const PACK_PATH = { general: "/", hoa: "/hoa", dental: "/dental" };
+
+  const langMatch = location.pathname.match(/^\/(fr|es)(?=\/|$)/);
+  const lang = langMatch ? langMatch[1] : "en";
+  const prefix = lang === "en" ? "" : "/" + lang;
+  const rest = location.pathname.slice(prefix.length).replace(/\/+$/, "") || "/";
+  const packName = PATH_PACK[rest] || "general";
+  const L = I18N[lang];
+  const pack = L.packs[packName];
+  const LABEL = L.labels;
   const MAX_FILES = 5;
   const ALLOWED_EXTS = [".pdf", ".docx", ".doc", ".txt", ".md"];
+
+  // t("loaded", {n: 3}) -> the words in this language, with {n} filled in.
+  function t(key, vars = {}) {
+    return (L.ui[key] || "").replace(/\{(\w+)\}/g, (_, k) => (k in vars ? vars[k] : ""));
+  }
 
   const $ = id => document.getElementById(id);
   const transcript = $("transcript"), q = $("q"), send = $("send"), examples = $("examples");
@@ -286,13 +1174,33 @@
   let busy = false;
 
   // ---- page set-up ----
+  document.documentElement.lang = lang;
+  document.title = L.meta.title;
+  document.querySelector('meta[name="description"]').setAttribute("content", L.meta.description);
   document.body.dataset.pack = packName;
-  document.querySelector(`.tabs a[data-tab="${packName}"]`).setAttribute("aria-current", "page");
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = t(el.dataset.t); });
+  $("tabs").setAttribute("aria-label", t("industry"));
+  $("langs").setAttribute("aria-label", t("language"));
+  document.querySelectorAll(".tabs a").forEach(a => {
+    a.textContent = LABEL[a.dataset.tab];
+    a.href = (prefix + PACK_PATH[a.dataset.tab]).replace(/(.)\/$/, "$1");
+  });
+  const currentTab = document.querySelector(`.tabs a[data-tab="${packName}"]`);
+  currentTab.setAttribute("aria-current", "page");
+  // On a phone the tabs scroll sideways: show the current one.
+  $("tabs").scrollLeft = Math.max(0, currentTab.offsetLeft + currentTab.offsetWidth - $("tabs").clientWidth + 8);
+  document.querySelectorAll(".langs a").forEach(a => {
+    const p = a.dataset.lang === "en" ? "" : "/" + a.dataset.lang;
+    a.href = (p + PACK_PATH[packName]).replace(/(.)\/$/, "$1");
+    if (a.dataset.lang === lang) a.setAttribute("aria-current", "true");
+  });
   $("tagline").textContent = pack.tagline;
   $("docsHint").textContent = pack.hint;
   $("sampleWhat").textContent = pack.what;
   $("emptyTitle").textContent = pack.empty;
-  pack.files.forEach((f, i) => {
+  $("ctaLink").href = t("ctaUrl");
+  if (!t("samplesLang")) document.querySelector(".lang-note").remove();
+  SAMPLE_FILES[packName].forEach((f, i) => {
     const a = document.createElement("a");
     a.href = `/static/samples/${packName}/${f}`;
     a.target = "_blank";
@@ -301,29 +1209,67 @@
     if (i) $("sampleFiles").append(" · ");
     $("sampleFiles").append(a);
   });
-  $("sampleFiles").append(" (open to read)");
+  $("sampleFiles").append(" " + t("openToRead"));
+
+  // ---- the explanation below the demo ----
+  L.steps.forEach(s => {
+    const li = document.createElement("li");
+    const h = document.createElement("h3"); h.textContent = s.t;
+    const p = document.createElement("p"); p.textContent = s.d;
+    li.append(h, p);
+    $("steps").appendChild(li);
+  });
+  L.uses.forEach(u => {
+    const card = document.createElement("div");
+    card.className = "use";
+    const h = document.createElement("h3"); h.textContent = u.name;
+    const reads = document.createElement("p"); reads.className = "reads";
+    const b = document.createElement("b"); b.textContent = t("usesReads") + ": ";
+    reads.append(b, u.docs);
+    const ul = document.createElement("ul");
+    u.q.forEach(text => { const li = document.createElement("li"); li.textContent = text; ul.appendChild(li); });
+    card.append(h, reads, ul);
+    if (u.pack) {
+      const a = document.createElement("a");
+      a.className = "go";
+      a.href = (prefix + PACK_PATH[u.pack]).replace(/(.)\/$/, "$1");
+      a.textContent = t("usesTry") + " →";
+      card.appendChild(a);
+    } else {
+      const own = document.createElement("span"); own.className = "own"; own.textContent = t("usesOwn");
+      card.appendChild(own);
+    }
+    $("uses").appendChild(card);
+  });
+  L.privacy.forEach(text => { const li = document.createElement("li"); li.textContent = text; $("privacyList").appendChild(li); });
+  L.faq.forEach(f => {
+    const d = document.createElement("details");
+    const s = document.createElement("summary"); s.textContent = f.q;
+    const p = document.createElement("p"); p.textContent = f.a;
+    d.append(s, p);
+    $("faqList").appendChild(d);
+  });
+
   // Starter questions follow what is loaded, not the tab: documents stay loaded
   // when the visitor switches industry, and HOA questions make no sense against
   // a dental manual.
   function loadedPack() {
     const names = new Set(documents.map(d => d.filename));
-    return Object.keys(PACKS).find(k => PACKS[k].files.every(f => names.has(f))) || null;
+    return Object.keys(SAMPLE_FILES).find(k => SAMPLE_FILES[k].every(f => names.has(f))) || null;
   }
 
   function renderQuestions() {
     const match = loadedPack();
     let list = pack.questions;
-    let hint = "Load the sample documents, then try one of these.";
+    let hint = t("hintLoad");
     let other = false;
     if (documents.length && match) {
-      list = PACKS[match].questions;
+      list = L.packs[match].questions;
       other = match !== packName;
-      hint = other
-        ? `These match the ${LABEL[match]} sample documents you have loaded.`
-        : "Answered from the sample documents. Or ask your own question.";
+      hint = other ? t("hintOther", { pack: LABEL[match] }) : t("hintMatch");
     } else if (documents.length) {
-      list = OWN_QUESTIONS;
-      hint = "Questions that work on most documents. Ask anything specific too.";
+      list = L.own;
+      hint = t("hintOwn");
     }
     $("askHint").textContent = hint;
     examples.innerHTML = "";
@@ -335,7 +1281,7 @@
     });
     const sw = $("askSwitch");
     sw.hidden = !other;
-    sw.textContent = `Load the ${LABEL[packName]} sample documents instead`;
+    sw.textContent = t("switchTo", { pack: LABEL[packName] });
   }
   $("askSwitch").addEventListener("click", () => loadBtn.click());
   renderQuestions();
@@ -345,11 +1291,11 @@
   }
 
   function showToast(msg) {
-    const t = $("toast");
-    t.textContent = msg;
-    t.classList.add("show");
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
     clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => t.classList.remove("show"), 5000);
+    showToast.timer = setTimeout(() => el.classList.remove("show"), 5000);
   }
 
   function note(text) {
@@ -367,15 +1313,19 @@
     docsEl.innerHTML = "";
     documents.forEach(d => {
       const li = document.createElement("li");
-      li.innerHTML = `<span class="dot"></span><span class="nm"></span><span class="pg"></span><button type="button" aria-label="Remove">×</button>`;
+      li.innerHTML = `<span class="dot"></span><span class="nm"></span><span class="pg"></span><button type="button"></button>`;
       li.querySelector(".nm").textContent = shortName(d.filename);
       li.querySelector(".nm").title = d.filename;
-      const unit = d.kind === "part" ? "part" : "page";
-      li.querySelector(".pg").textContent = `${d.chunks} ${unit}${d.chunks === 1 ? "" : "s"}`;
-      li.querySelector("button").addEventListener("click", () => removeDoc(d.filename));
+      const one = d.chunks === 1;
+      const unit = d.kind === "part" ? t(one ? "parts1" : "partsN") : t(one ? "pages1" : "pagesN");
+      li.querySelector(".pg").textContent = `${d.chunks} ${unit}`;
+      const rm = li.querySelector("button");
+      rm.textContent = "×";
+      rm.setAttribute("aria-label", t("remove"));
+      rm.addEventListener("click", () => removeDoc(d.filename));
       docsEl.appendChild(li);
     });
-    $("count").textContent = documents.length ? `${documents.length} of ${MAX_FILES}` : "";
+    $("count").textContent = documents.length ? `${documents.length} / ${MAX_FILES}` : "";
     drop.classList.toggle("full", documents.length >= MAX_FILES);
     renderQuestions();
     setReady(documents.length > 0);
@@ -385,7 +1335,7 @@
     const enabled = on && !busy;
     q.disabled = !enabled;
     send.disabled = !enabled;
-    q.placeholder = on ? "Ask a question about your documents…" : "Load documents first…";
+    q.placeholder = on ? t("phAsk") : t("phLoad");
     examples.querySelectorAll(".chip").forEach(c => c.disabled = !enabled);
     loadBtn.disabled = busy;
   }
@@ -394,29 +1344,29 @@
     const res = await fetch(url, options);
     let data = {};
     try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error(data.detail || "Something went wrong. Please try again.");
+    if (!res.ok) throw new Error(data.detail || t("error"));
     return data;
   }
 
   // A refresh keeps the visitor's documents (the server holds them for an hour).
   call("/health").then(h => {
     render(h);
-    if (h.ready) note("Your documents are still loaded.");
+    if (h.ready) note(t("stillLoaded"));
   }).catch(() => render({ documents: [] }));
 
   loadBtn.addEventListener("click", async () => {
     busy = true; setReady(false);
-    loadBtn.textContent = "Loading…";
+    loadBtn.textContent = t("loading");
     try {
       const state = await call(`/samples/${packName}`, { method: "POST" });
       render(state);
-      note(`Loaded ${state.documents.length} sample documents. Try a question.`);
+      note(t("loaded", { n: state.documents.length }));
       q.focus();
     } catch (err) {
       showToast(err.message);
     } finally {
       busy = false;
-      loadBtn.textContent = "Load sample documents";
+      loadBtn.textContent = t("load");
       setReady(documents.length > 0);
     }
   });
@@ -435,17 +1385,17 @@
   async function upload(file) {
     const name = file.name.toLowerCase();
     if (!ALLOWED_EXTS.some(ext => name.endsWith(ext))) {
-      showToast("Please choose a PDF, Word, text, or Markdown file.");
+      showToast(t("badType"));
       return false;
     }
     if (documents.length >= MAX_FILES && !documents.some(d => d.filename === file.name)) {
-      showToast(`You can load up to ${MAX_FILES} documents. Remove one to add another.`);
+      showToast(t("tooMany", { max: MAX_FILES }));
       return false;
     }
     busy = true; setReady(false);
     const li = document.createElement("li");
     li.innerHTML = `<span class="dot"></span><span class="nm busy"></span>`;
-    li.querySelector(".nm").textContent = `Reading ${file.name}…`;
+    li.querySelector(".nm").textContent = t("reading", { name: file.name });
     docsEl.appendChild(li);
     const form = new FormData();
     form.append("file", file);
@@ -453,7 +1403,7 @@
       const state = await call("/upload", { method: "POST", body: form });
       busy = false;
       render(state);
-      note(`Added ${file.name}.`);
+      note(t("added", { name: file.name }));
       return true;
     } catch (err) {
       busy = false;
@@ -471,7 +1421,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename }),
       }));
-      note(`Removed ${filename}.`);
+      note(t("removed", { name: filename }));
     } catch (err) {
       showToast(err.message);
     }
@@ -495,15 +1445,16 @@
   }
 
   function where(s) {
-    const unit = s.kind === "part" ? "Part" : "Page";
-    return { short: `${shortName(s.file || "")} · ${unit.toLowerCase().slice(0, 1)}. ${s.page}`, long: `${shortName(s.file || "")} · ${unit} ${s.page} · quoted` };
+    const part = s.kind === "part";
+    const name = shortName(s.file || "");
+    return { short: `${name} · ${t(part ? "partShort" : "pageShort")} ${s.page}`, long: `${name} · ${t(part ? "part" : "page")} ${s.page} · ${t("quoted")}` };
   }
 
   function renderSources(sources) {
     const box = document.createElement("div");
     const toggle = document.createElement("button");
     toggle.className = "src-toggle";
-    toggle.textContent = `Sources · ${sources.length} quoted passage${sources.length > 1 ? "s" : ""}`;
+    toggle.textContent = sources.length === 1 ? t("sources1") : t("sourcesN", { n: sources.length });
     const row = document.createElement("div");
     row.className = "src-row";
     const bodies = document.createElement("div");
