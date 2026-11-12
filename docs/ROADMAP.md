@@ -1,5 +1,5 @@
 # ROADMAP — AskDoc (aidemo)
-**Derived from `MASTER_CANON.md` v0.10.4 · Nov 11, 2026**
+**Derived from `MASTER_CANON.md` v0.10.5 · Nov 12, 2026**
 **Status:** **AskDoc Lite LIVE** at `aidemo.mcspconsulting.com` (canon D-5); one library per visitor (D-6); up to 5 documents and the `/`, `/hoa`, `/dental` pages with sample packs (D-7) live since Nov 6 (v0.9.0); v0.9.1 built, Redeploy + smoke test pending (OPEN-15). Next build: the Client Edition (D-8). **AskDoc RAG** still **SHELVED** (v0.7.2), revivable via Deploy, moves to its own subdomain on its own server.
 
 > Canon is the source of truth; this file is derived from it. Feature IDs:
@@ -37,7 +37,8 @@
 | APP-11 | AskDoc Lite engine — whole document to Claude with built-in citations + prompt caching; answers quote the passage and page | v0.8.0 |
 | APP-12 | Shared extraction module `app/extract.py` (moved verbatim from `rag.py`, re-exported) | v0.8.0 |
 | APP-13 | Shared UI made engine-aware (Lite mark, tagline, "quoted" sources) | v0.8.0 |
-| INFRA-22 | Redeploy the hardened Lite demo (volume `askdoc-lite-data` appears), then smoke-test a question and the upload limit | **James** | OPEN-18 |
+| INFRA-22 | Hardened Lite demo redeployed; volume mounted; day's count survives a redeploy (proven Nov 12). Left: the upload-limit check | **James** | OPEN-18 |
+| GTM-11 | Explain the demo page: How it works, ~12 industry cards, documents, FAQ; EN/FR/ES (proposed, waiting for the go) | CLI | OPEN-19 |
 | HARDEN-08 | `test_lite.py` — real SDK against a fake API server; asserts no torch/numpy/RAG import | v0.8.0 |
 | INFRA-14 | Lite image pipeline — `Dockerfile.lite`, `docker-compose.lite.yml`, `build-lite.yml` → `ghcr.io/mcsp-web/aidemo-lite` | v0.8.0 |
 | INFRA-15 | Lite deployed in Coolify; `aidemo.mcspconsulting.com` moved from the RAG resource (RAG placeholder `rag.mcspconsulting.com:8000`) | v0.8.1 |
