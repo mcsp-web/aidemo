@@ -31,7 +31,8 @@ SYSTEM_PROMPT = (
     "asked about, say so before giving the closest answer they support. If two documents "
     "disagree, say so and give both. Be concise: answer in about 150 words or fewer "
     "unless the question asks for detail. Quote figures exactly, and write plain text "
-    "without Markdown formatting."
+    "without Markdown formatting. Answer in the language the question is asked in, even when the "
+    "documents are in another language; keep quoted passages as they are written."
 )
 
 NOT_FOUND = "I couldn't find that in the documents."

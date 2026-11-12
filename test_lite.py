@@ -232,11 +232,47 @@ del os.environ["LITE_DAILY_QUESTIONS"]
 assert visitor.post("/samples/legal").status_code == 404
 print("[ok] loading a sample pack replaces the library, needs no question allowance; unknown pack 404")
 
-for path in ("/", "/hoa", "/dental"):
+for path in ("/", "/hoa", "/dental", "/fr", "/fr/hoa", "/fr/dental", "/es", "/es/hoa", "/es/dental"):
     r = client.get(path)
     assert r.status_code == 200 and "Ask Your Document" in r.text and "data-tab=\"hoa\"" in r.text, path
+assert client.get("/de").status_code == 404
 assert client.get("/static/samples/hoa/Palm-Hollow-HOA-Bylaws.pdf").status_code == 200
-print("[ok] /, /hoa and /dental serve the Lite page; sample PDFs can be opened")
+print("[ok] /, /hoa, /dental and their /fr and /es versions serve the Lite page; sample PDFs can be opened")
+
+# The page explains itself, in three languages with the same shape (no missing word in one of them).
+import re as _re  # noqa: E402
+from pathlib import Path  # noqa: E402
+page_html = (Path(__file__).parent / "app" / "static" / "lite.html").read_text(encoding="utf-8")
+words = json.loads(_re.search(r'<script type="application/json" id="i18n">(.*?)</script>', page_html, _re.S).group(1))
+assert sorted(words) == ["en", "es", "fr"]
+
+
+def shape(v):
+    if isinstance(v, dict):
+        return {k: shape(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [shape(x) for x in v]
+    return type(v).__name__
+
+
+assert shape(words["fr"]) == shape(words["en"]) and shape(words["es"]) == shape(words["en"]), "a language is missing words"
+for lang, w in words.items():
+    for key in [k for k, v in w["ui"].items() if not v]:
+        assert lang == "en" and key == "samplesLang", (lang, key)  # only English needs no "samples are in English" note
+    assert len(w["uses"]) >= 12 and len(w["steps"]) == 3 and w["faq"] and w["privacy"], lang
+    assert {u["pack"] for u in w["uses"]} >= {"hoa", "dental", "general"}, lang
+    assert w["ui"]["ctaUrl"].startswith("https://mcspconsulting.com/") and "ai-assistants" in w["ui"]["ctaUrl"], lang
+    for pack in ("general", "hoa", "dental"):
+        assert len(w["packs"][pack]["questions"]) == 4, (lang, pack)
+for key in _re.findall(r'data-t="(\w+)"', page_html):
+    assert key in words["en"]["ui"], key  # every labelled element has its words
+for section in ('id="how"', 'id="uses"', 'id="privacy"', 'id="faq"', 'id="ctaLink"', 'data-lang="fr"', 'data-lang="es"'):
+    assert section in page_html, section
+# What the page says about documents matches the code.
+assert int(os.getenv("LITE_DOC_TTL_SECONDS", "3600")) == 3600 and "an hour" in words["en"]["privacy"][1]
+from app.main_lite import MAX_UPLOAD_BYTES  # noqa: E402
+assert MAX_UPLOAD_BYTES == 20 * 1024 * 1024 and "20 MB" in words["en"]["faq"][0]["a"]
+print("[ok] the page explains itself (how it works, 12 industries, documents, FAQ) in EN, FR and ES with the same shape")
 
 # ---------------------------------------------------------------- one library per visitor
 up = client.post("/upload", files={"file": ("handbook.pdf", HANDBOOK, "application/pdf")})
@@ -279,6 +315,7 @@ print("[ok] store drops the oldest beyond LITE_MAX_DOCS and expires unused libra
 
 from app.lite import SYSTEM_PROMPT  # noqa: E402
 assert "calculation" in SYSTEM_PROMPT and "exact situation" in SYSTEM_PROMPT and "disagree" in SYSTEM_PROMPT
+assert "language the question is asked in" in SYSTEM_PROMPT  # the French and Spanish pages promise it
 print("[ok] system prompt: figures behind calculations, uncovered cases, disagreeing documents")
 
 r = client.post("/ask", json={"question": "please fail"})

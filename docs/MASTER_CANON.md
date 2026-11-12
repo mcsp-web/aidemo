@@ -1,6 +1,6 @@
 # MASTER CANON — AskDoc (aidemo)
 **Last Updated:** November 12, 2026 (session 7)
-**Current Version:** v0.10.5
+**Current Version:** v0.10.6
 **Status:** Two editions. **AskDoc Lite** is **LIVE** at `aidemo.mcspconsulting.com` (deployed Nov 4, 2026; D-5), one library per visitor (D-6). Up to 5 documents per visitor and industry pages `/`, `/hoa`, `/dental` with sample packs (D-7): v0.9.0 live since Nov 6 (first look done); v0.9.1 (questions follow loaded documents, no cut-off answers) built green Nov 6, its Redeploy and the full smoke test are OPEN-15. Next build: the Client Edition (D-8, plan v0.10.0). **AskDoc RAG** stays **SHELVED** (v0.7.2), revivable via Deploy; it moves to its own subdomain when it gets its own server.
 **Stack:** Python 3.11 · FastAPI · Anthropic Claude · Docker · Coolify · Cloudflare · Hetzner. RAG edition adds sentence-transformers/torch (swappable → OpenAI); Lite edition needs neither.
 
@@ -321,6 +321,14 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 - **Coolify label:** the Lite resource may be renamed from `aidemo:main-…` to `askdoc-lite` (Name field, Save); Coolify keys the app by its ID, so the domain, container and volume are unaffected.
 - **Proposed (OPEN-19, waiting for James's go):** the page explains too little. Like ChatPDF, Humata and Chatbase, add below the demo: a one-line promise, "How it works" in three steps, about 12 industry cards (documents read + two example questions; HOA and dental link to their pages), what happens to your documents (written from the code), a short FAQ and a button to MCSP's AI page; English, French and Spanish with a switch. Page words and layout only; upload and question code untouched.
 
+### [v0.10.6] — Nov 12, 2026 — The demo page explains itself, in English, French and Spanish (OPEN-19 built, James's go)
+**Summary:** below the demo, which stays at the top, the Lite page now has what ChatPDF, Humata and Chatbase show: a one-line promise, How it works (3 steps), Who uses it (12 industry cards: the documents each reads and two example questions; HOA, dental and any business link to their sample pages, the others say "try it with your own document"), What happens to your documents, a 7-question FAQ, and a closing button to MCSP's AI page. All three test scripts pass.
+- **Three languages:** `/fr`, `/fr/hoa`, `/fr/dental`, `/es`, `/es/hoa`, `/es/dental` (routes in `main_lite.py`) with an EN/FR/ES switch that keeps the industry. Every word is in one JSON block in `lite.html`; the sample documents stay in English and the FR/ES pages say so. Server error messages are still English.
+- **Answer language (`lite.py`, own commit):** the prompt now says to answer in the language of the question and keep quoted passages as written, as the FR/ES pages promise.
+- **Claims match the code:** documents in memory per browser session, deleted after an hour unused (`LITE_DOC_TTL_SECONDS` 3600) or on restart; 20 MB per file, 5 files, about 200 pages of text; scanned PDFs not read; sent to Anthropic's API, which does not train on API data under its commercial terms. `test_lite.py` checks the three languages have the same shape, the 12 industries, the routes, and the one-hour and 20 MB figures against the code; a missing French word was put in on purpose and the test failed.
+- **Phones:** the industry tabs scroll inside their box and show the current one; the page no longer widens past the screen (checked at 390 px in EN, FR and ES).
+- **Operator (BOLD, James):** after merge, `build-lite` green → Redeploy Lite; look at `/`, `/fr/hoa`, `/es/dental` on phone and laptop; ask one question in French on `/fr/hoa` (answer in French, quote in English). A native speaker's read of the French and Spanish words is welcome.
+
 ---
 
 ## SECTION 6 — DECISIONS
@@ -361,7 +369,7 @@ On "update canon": append a dated, versioned entry to Section 5 with the files c
 
 ### ⏳ OPEN — do these next
 - **OPEN-18 — Last check of the hardened demo (BOLD, James):** redeploy, volume and the day's count across a redeploy **proven** (v0.10.5). Left: add 20+ files quickly from one browser → "You've added a lot of files in a short time".
-- **OPEN-19 — Explain the demo page (proposed v0.10.5, waiting for James's go):** one-line promise, How it works (3 steps), ~12 industry cards, what happens to your documents (from the code), FAQ, button to MCSP's AI page; EN/FR/ES with a switch. Check the answer language for FR/ES visitors before claiming it. One PR, page only.
+- **OPEN-19 — Explained page built (v0.10.6); look at it live (BOLD, James):** after `build-lite` green → Redeploy, check `/`, `/fr/hoa`, `/es/dental` on phone and laptop, and ask one question in French on `/fr/hoa` (answer in French).
 - **OPEN-13 — Switch off auto-deploy on the Lite resource (James, Coolify):** Configuration → Advanced → Deployment → Auto deploy → the off/manual option → Save. Then every deploy is: `build-lite` green → Redeploy.
 - **OPEN-15 — v0.9.1 Redeploy + live smoke test (BOLD, James):** the v0.9.1 image is built (green Nov 6); Redeploy if not done yet. Check first: load the HOA samples, switch to the Any business tab → the HOA questions stay, with "Load the Any business sample documents instead". On `/hoa`: Load sample documents → ask "Can I put up a wood fence, and what does it cost to apply?" → expect "no, vinyl or aluminum only" + $50, quoting the CC&Rs and the Rules and Fees file. On `/dental`: the third-cleaning question → quotes the PPO summary. On `/`: the $3,000 purchase question → department head. Then: add one of your own files (6th file refused), remove one, refresh (library stays), open a private window (empty).
 - **OPEN-14 — Watch for repeated sentences in answers** (one seen on Nov 4). If it recurs, capture the raw API content blocks from the log and decide on a fix. *(CLI)*
